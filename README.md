@@ -1,4 +1,4 @@
-dhtmlxGantt v.6.2.6 - Dev
+dhtmlxGantt v.7.0.7 - Dev
 =================
 
 [![Join the chat at https://gitter.im/dhtmlx/dhtmlx](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dhtmlx/dhtmlx)

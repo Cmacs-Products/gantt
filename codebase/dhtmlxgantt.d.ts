@@ -1,7 +1,5 @@
-// Type definitions for dhtmlxGantt 7.0.5
+// Type definitions for dhtmlxGantt 7.0.7
 // Project: https://dhtmlx.com/docs/products/dhtmlxGantt
-// Definitions by: Maksim Kozhukh <https://github.com/mkozhukh>, Christophe Camicas <https://github.com/chriscamicas>
-// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
 type GanttCallback = (...args: any[]) => any;
 
@@ -1320,8 +1318,9 @@ export interface GanttStatic {
 
 	/**
 	 * Promise object constructor
+	 * @param executor a callback used to initialize the promise
 	*/
-	Promise(): void;
+	Promise: new (executor: (resolve: (value?: any) => void, reject: (reason?: any) => void) => void) => Promise<unknown>;
 
 	/**
 	 * adds a calendar into Gantt
@@ -2421,6 +2420,12 @@ export interface GanttStatic {
 	 * @param id the task id
 	*/
 	showTask(id: string|number): void;
+
+	/**
+	 * makes all code inside it not to trigger internal events or server-side calls
+	 * @param callback the callback function
+	*/
+	silent(callback: GanttCallback): void;
 
 	/**
 	 * sorts tasks in the grid
