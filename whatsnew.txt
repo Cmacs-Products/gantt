@@ -1,3 +1,74 @@
+### 7.1.0
+
+The ability to assign resources to the specific dates of the task
+The new gantt.getTaskAssignments() method
+The ability to manage the resource assignments via the new gantt.config.process_resource_assignments and gantt.updateTaskAssignments() Gantt API
+Rollup tasks and milestones
+The ability to hide task bars and milestones in the timeline area
+The ability to set different working hours for different time spans
+The ability to set the height for a separate row in the grid
+The ability to resize a row in the grid by drag-and-drop
+The ability to get the height of the DOM element of the task via the gantt.getTaskBarHeight() method
+New events: onBeforeRowResize, onRowResize, onBeforeRowResizeEnd, onAfterRowResize
+The onrender callback for rendering a grid cell into DOM is added
+The onrender callback for rendering a custom element of the task layer into DOM is added
+Fix the issue with reordering tasks vertically in the resource view when resources have values assigned
+Fix the issue that caused “resource_cell_value” not being called and the resource markers not being rendered if a task doesn’t start at the beginning of the timeline cell
+Fix the issue that caused Gantt to stop working when deleting the task with the id that already exists in the data store
+Fix the script error thrown when specifying the 0 number value as a task id even if the “root_id” parameter is set
+Fix the issue that caused the resizer listener not to work in Salesforce environment
+Fix the script error appeared when applying Fullscreen Extension several times together with its methods
+Fix the issue with Keyboard Navigation Extension that caused navigation in Grid to stop working when adding the plugin several times
+Fix the issue with Inline Editors when the editor couldn't be opened in a cell that is located after a column that is hidden via hide:true property
+
+### 7.0.13
+
+Fix the script error happened when the layout configuration is changed dynamically and gantt.addTaskLayer is used
+Fix the issue with the initial inner height of the resource histogram when the fetchTasks option is used
+Fix the incorrect work of the predecessor editor which caused it to delete existing links when the value is edited
+Fix the incorrect work of the gantt when a task with a non-unique ID is added to the gantt via the gantt.addTask and gantt.parse methods
+Performance improvement for drag and drop when the auto_types and drag_project configuration options are enabled
+Performance improvement for calculation of working time when duration_unit is set to "day"
+
+### 7.0.12
+
+Fix some minor issues with vertical drag and drop in large projects
+Fix the issue with the incorrect size of the container when the "autosize" config is used
+Keyboard navigation should now work correctly with the horizontal scroll of the grid
+HTML views of Layout now support external scrollbars
+Fix the issue that caused the incorrect state of the grid after reordering tasks, if the additional grid was added to the layout
+Fix the script error that happened after clearing and reloading the resource panel if a resource was selected
+Add the ability to disable automatic correction of the end date in the time section of the lightbox, which was applied when the selected start date was greater than the end date
+Fix a typo in the default config of Duration Formatter
+Fix the script error thrown when the gantt is destroyed while a popup message is shown
+Fix the initial position of the horizontal scroll in Grid and Timeline in the RTL mode
+Fix the incorrect work of the lightbox which caused the selected type of a task not to be saved if the typeselect control was not added to the lightbox configuration
+Fix the issue that caused markers to disappear after calling the "gantt.resetLayout()" method
+Fix the performance issue with the "drag_project" config used in large projects
+Fix the issue that prevented the QuickInfo popup from being displayed in the read-only mode when custom buttons were added to the config
+
+### 7.0.11
+
+Add the container_resize_timeout config for changing the timeout before redrawing Gantt when resizing the container
+Add the wheel_scroll_sensitivity config for changing the speed of scrolling the gantt by the mouse wheel
+Fix the bug with Auto Scheduling when using different working calendars
+Fix the conflict between placeholder tasks and Auto Scheduling
+Fix redundant repaints when api/gantt_sort_config.md is enabled
+Fix the issue with Inline Editors and a scrollable grid, when inline editors lose focus right after click
+Fix the issue that caused Gantt to close the Quick Info popup when the user clicks on it
+
+### 7.0.10
+
+Fix the incorrect work of vertical resizers (the regression appeared in v7.0.9)
+Prevent unexpected page refresh which happened during vertical reordering of tasks on Android Chrome (pull-to-refresh)
+Fix the script error which fired during creating a link on mobile Firefox
+Fix the incorrect work of task selection when the multiselect config is enabled but the multiselect plugin is not activated
+Improve the work of HTML select controls inside Inline Editors
+Fix the incorrect work of Auto Scheduling when linked tasks use different work calendars
+The gantt.plugins method will not activate plugins which are specified with false value
+Fix the conflict between Inline Editors and Keyboard Navigation
+Fix the issue that caused Inline Editors to close on double click
+
 ### 7.0.9
 
 Fix the script error on the second initialization of Gantt when custom datastores are added
