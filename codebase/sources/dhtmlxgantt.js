@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxGantt v.7.1.5 Professional
+dhtmlxGantt v.7.1.3 Professional
 
 This software is covered by DHTMLX Enterprise License. Usage without proper license is prohibited.
 
@@ -14026,10 +14026,8 @@ module.exports = function (gantt) {
       if (this.$root) {
         if (this.config.rtl) {
           this.$root.classList.add("gantt_rtl");
-          this.$root.firstChild.classList.add("gantt_rtl"); // GS-1499
         } else {
           this.$root.classList.remove("gantt_rtl");
-          this.$root.firstChild.classList.remove("gantt_rtl"); // GS-1499
         }
       }
 
@@ -14769,53 +14767,32 @@ module.exports = function (gantt) {
     };
   }
 
-  function checkTaskType(id, changedTypes) {
-    var task = gantt.getTask(id);
-    var targetType = getTaskTypeToUpdate(task);
-
-    if (targetType !== false && gantt.getTaskType(task) !== targetType) {
-      changedTypes.$needsUpdate = true;
-      changedTypes[task.id] = {
-        task: task,
-        type: targetType
-      };
-    }
-  }
-
-  function getUpdatedTypes(id, changedTypes) {
-    changedTypes = changedTypes || {};
-    checkTaskType(id, changedTypes);
-    gantt.eachParent(function (parent) {
-      checkTaskType(parent.id, changedTypes);
-    }, id);
-    return changedTypes;
-  }
-
-  function applyChanges(changedTypes) {
-    for (var i in changedTypes) {
-      if (changedTypes[i] && changedTypes[i].task) {
-        var task = changedTypes[i].task;
-        task.type = changedTypes[i].type;
-        gantt.updateTask(task.id);
-      }
-    }
-  }
-
-  function updateParentTypes(startId) {
-    if (gantt.getState().group_mode) {
-      return;
-    }
-
-    var changedTypes = getUpdatedTypes(startId);
-
-    if (changedTypes.$needsUpdate) {
-      gantt.batchUpdate(function () {
-        applyChanges(changedTypes);
-      });
-    }
+  function updateParents(childId) {
+    gantt.batchUpdate(function () {
+      checkParent(childId);
+    });
   }
 
   var delTaskParent;
+
+  function checkParent(id) {
+    setTaskType(id);
+    var parent = gantt.getParent(id);
+
+    if (parent != gantt.config.root_id) {
+      checkParent(parent);
+    }
+  }
+
+  function setTaskType(id) {
+    id = id.id || id;
+    var task = gantt.getTask(id);
+    var targetType = getTaskTypeToUpdate(task);
+
+    if (targetType !== false) {
+      updateTaskType(task, targetType);
+    }
+  }
 
   function updateTaskType(task, targetType) {
     if (!gantt.getState().group_mode) {
@@ -14843,11 +14820,6 @@ module.exports = function (gantt) {
   var isParsingDone = true;
   gantt.attachEvent("onParse", callIfEnabled(function () {
     isParsingDone = false;
-
-    if (gantt.getState().group_mode) {
-      return;
-    }
-
     gantt.batchUpdate(function () {
       gantt.eachTask(function (task) {
         var targetType = getTaskTypeToUpdate(task);
@@ -14861,18 +14833,18 @@ module.exports = function (gantt) {
   }));
   gantt.attachEvent("onAfterTaskAdd", callIfEnabled(function (id) {
     if (isParsingDone) {
-      updateParentTypes(id);
+      updateParents(id);
     }
   }));
   gantt.attachEvent("onAfterTaskUpdate", callIfEnabled(function (id) {
     if (isParsingDone) {
-      updateParentTypes(id);
+      updateParents(id);
     }
   }));
 
   function updateAfterRemoveChild(id) {
     if (id != gantt.config.root_id && gantt.isTaskExists(id)) {
-      updateParentTypes(id);
+      updateParents(id);
     }
   }
 
@@ -14890,7 +14862,7 @@ module.exports = function (gantt) {
   }));
   gantt.attachEvent("onRowDragEnd", callIfEnabled(function (id, target) {
     updateAfterRemoveChild(originalRowDndParent);
-    updateParentTypes(id);
+    updateParents(id);
   }));
   var originalMoveTaskParent;
   gantt.attachEvent("onBeforeTaskMove", callIfEnabled(function (sid, parent, tindex) {
@@ -14904,7 +14876,7 @@ module.exports = function (gantt) {
     }
 
     updateAfterRemoveChild(originalMoveTaskParent);
-    updateParentTypes(id);
+    updateParents(id);
   }));
 };
 
@@ -16595,11 +16567,6 @@ module.exports = function (gantt) {
     }, true);
 
     var respectTargetOffset = gantt.config.auto_scheduling_move_projects;
-
-    if (!gantt.config.auto_scheduling_compatibility && gantt.config.auto_scheduling_strict) {
-      respectTargetOffset = false;
-    }
-
     var targetDates = this.isSummaryTask(target) ? this.getSubtaskDates(target.id) : {
       start_date: target.start_date,
       end_date: target.end_date
@@ -17044,16 +17011,21 @@ module.exports = function (gantt) {
 
 var utils = __webpack_require__(/*! ../../utils/utils */ "./sources/utils/utils.js");
 
+function ViewSettings(config) {
+  utils.mixin(this, config, true);
+}
+
 function extendSettings(store, parentSettings) {
   var own = this.$config[store];
 
   if (own) {
-    if (!own.$extendedConfig) {
-      own.$extendedConfig = true;
-      Object.setPrototypeOf(own, parentSettings);
+    if (own instanceof ViewSettings) {
+      return own;
+    } else {
+      ViewSettings.prototype = parentSettings;
+      this.$config[store] = new ViewSettings(own);
+      return this.$config[store];
     }
-
-    return own;
   } else {
     return parentSettings;
   }
@@ -17283,7 +17255,7 @@ function create(gantt) {
       var row = domHelpers.locateAttribute(node, grid.$config.item_attribute);
       var cell = domHelpers.locateAttribute(node, "data-column-name");
 
-      if (row && cell) {
+      if (cell) {
         var columnName = cell.getAttribute("data-column-name");
         var id = row.getAttribute(grid.$config.item_attribute);
         return {
@@ -17673,34 +17645,18 @@ function create(gantt) {
 
         return nextItem;
       },
-      editNextRow: function nextRow(skipReadonly) {
-        var id = this.getState().id;
-        if (!gantt.isTaskExists(id)) return;
-        var next = null;
+      editNextRow: function nextRow() {
+        var row = this.getNextCell(1);
 
-        if (skipReadonly) {
-          next = this.moveRow(1);
-        } else {
-          next = gantt.getNext(id);
-        }
-
-        if (gantt.isTaskExists(next)) {
-          this.startEdit(next, this._columnName);
+        if (row) {
+          this.startEdit(row, this._columnName);
         }
       },
-      editPrevRow: function prevRow(skipReadonly) {
-        var id = this.getState().id;
-        if (!gantt.isTaskExists(id)) return;
-        var prev = null;
+      editPrevRow: function prevRow() {
+        var row = this.getNextCell(-1);
 
-        if (skipReadonly) {
-          prev = this.moveRow(-1);
-        } else {
-          prev = gantt.getPrev(id);
-        }
-
-        if (gantt.isTaskExists(prev)) {
-          this.startEdit(prev, this._columnName);
+        if (row) {
+          this.startEdit(row, this._columnName);
         }
       },
       destructor: function destructor() {
@@ -19259,7 +19215,7 @@ Grid.prototype = {
 
       var ariaAttrs = gantt._waiAria.gridScaleCellAttrString(col, label);
 
-      var cell = "<div class='" + cssClass + "' style='" + style + "' " + ariaAttrs + " data-column-id='" + col.name + "' column_id='" + col.name + "'" + " data-column-name='" + col.name + "' data-column-index='" + i + "'" + ">" + label + sort + "</div>";
+      var cell = "<div class='" + cssClass + "' style='" + style + "' " + ariaAttrs + " data-column-id='" + col.name + "' column_id='" + col.name + "'>" + label + sort + "</div>";
       cells.push(cell);
     }
 
@@ -20179,23 +20135,12 @@ function _init_dnd(gantt, grid) {
     var scrollPos = grid.$state.scrollTop || 0;
     var maxBottom = gantt.$grid_data.getBoundingClientRect().height + scrollPos;
     var minTop = scrollPos;
-    var firstVisibleTaskIndex = grid.getItemIndexByTopPosition(grid.$state.scrollTop);
-
-    if (!store.exists(firstVisibleTaskIndex)) {
-      firstVisibleTaskIndex = store.countVisible() - 1;
-    }
-
-    if (firstVisibleTaskIndex < 0) {
-      return store.$getRootId();
-    }
-
-    var firstVisibleTaskId = store.getIdByIndex(firstVisibleTaskIndex);
-    var firstVisibleTaskPos = grid.$state.scrollTop / grid.getItemHeight(firstVisibleTaskId);
+    var firstVisibleTaskPos = grid.$state.scrollTop / grid.getItemHeight();
     var hiddenTaskPart = firstVisibleTaskPos - Math.floor(firstVisibleTaskPos);
 
     if (hiddenTaskPart > 0.1 && hiddenTaskPart < 0.9) {
-      maxBottom = maxBottom - grid.getItemHeight(firstVisibleTaskId) * hiddenTaskPart;
-      minTop = minTop + grid.getItemHeight(firstVisibleTaskId) * (1 - hiddenTaskPart);
+      maxBottom = maxBottom - grid.getItemHeight() * hiddenTaskPart;
+      minTop = minTop + grid.getItemHeight() * (1 - hiddenTaskPart);
     }
 
     if (y >= maxBottom) {
@@ -20204,9 +20149,9 @@ function _init_dnd(gantt, grid) {
       y = minTop;
     }
 
-    var index = grid.getItemIndexByTopPosition(y);
+    var index = Math.floor(y / grid.getItemHeight());
 
-    if (index > store.countVisible() - 1 || index < 0) {
+    if (index > store.countVisible() - 1) {
       return store.$getRootId();
     }
 
@@ -21204,7 +21149,7 @@ var Layout = function (_super) {
   Layout.prototype._resizeScrollbars = function (autosize, scrollbars) {
     var scrollChanged = false;
     var visibleScrollbars = [],
-        hiddenScrollbars = [];
+        hiddenSrollbars = [];
 
     function showScrollbar(scrollbar) {
       scrollbar.$parent.show();
@@ -21215,7 +21160,7 @@ var Layout = function (_super) {
     function hideScrollbar(scrollbar) {
       scrollbar.$parent.hide();
       scrollChanged = true;
-      hiddenScrollbars.push(scrollbar);
+      hiddenSrollbars.push(scrollbar);
     }
 
     var scrollbar;
@@ -21233,7 +21178,7 @@ var Layout = function (_super) {
         if (scrollbar.isVisible()) {
           visibleScrollbars.push(scrollbar);
         } else {
-          hiddenScrollbars.push(scrollbar);
+          hiddenSrollbars.push(scrollbar);
         }
       }
     }
@@ -21246,8 +21191,8 @@ var Layout = function (_super) {
       }
     }
 
-    for (var i = 0; i < hiddenScrollbars.length; i++) {
-      scrollbar = hiddenScrollbars[i];
+    for (var i = 0; i < hiddenSrollbars.length; i++) {
+      scrollbar = hiddenSrollbars[i];
 
       if (scrollbar.$config.group && visibleGroups[scrollbar.$config.group]) {
         showScrollbar(scrollbar); // GS-707 If the scrollbar was hidden then showed, the container resize shouldn't happen because of that
@@ -21854,14 +21799,9 @@ var Layout = function (_super) {
     var firstCall = !this._visibleCells;
     var visibleCells = {};
     var cell;
-    var parentVisibility = [];
 
     for (var i = 0; i < this._sizes.length; i++) {
       cell = this.$cells[i];
-
-      if (cell.$config.hide_empty) {
-        parentVisibility.push(cell);
-      }
 
       if (!firstCall && cell.$config.hidden && oldVisibleCells[cell.$id]) {
         cell._hide(true);
@@ -21874,19 +21814,7 @@ var Layout = function (_super) {
       }
     }
 
-    this._visibleCells = visibleCells; // GS-27. A way to hide the whole cell if all its children are hidden
-
-    for (var i = 0; i < parentVisibility.length; i++) {
-      var cell = parentVisibility[i];
-      var children = cell.$cells;
-      var hideCell = true;
-      children.forEach(function (child) {
-        if (!child.$config.hidden && !child.$config.resizer) {
-          hideCell = false;
-        }
-      });
-      cell.$config.hidden = hideCell;
-    }
+    this._visibleCells = visibleCells;
   };
 
   Layout.prototype.setSize = function (x, y) {
@@ -25719,16 +25647,20 @@ var initializer = function () {
           if (mainTimeline) mainTimeline.$config.hidden = mainTimeline.$parent.$config.hidden = !gantt.config.show_chart;
           var mainGrid = gantt.$ui.getView("grid");
           if (!mainGrid) return;
+          var showGrid = gantt.config.show_grid;
 
-          var colsWidth = mainGrid._getColsTotalWidth();
+          if (first) {
+            var colsWidth = mainGrid._getColsTotalWidth();
 
-          var hideGrid = !gantt.config.show_grid || !gantt.config.grid_width || colsWidth === 0;
+            if (colsWidth !== false) {
+              gantt.config.grid_width = colsWidth;
+            }
 
-          if (first && !hideGrid && colsWidth !== false) {
-            gantt.config.grid_width = colsWidth;
+            showGrid = showGrid && !!gantt.config.grid_width;
+            gantt.config.show_grid = showGrid;
           }
 
-          mainGrid.$config.hidden = mainGrid.$parent.$config.hidden = hideGrid;
+          mainGrid.$config.hidden = mainGrid.$parent.$config.hidden = !showGrid;
 
           if (!mainGrid.$config.hidden) {
             /* restrict grid width due to min_width, max_width, min_grid_column_width */
@@ -28573,7 +28505,7 @@ function generateRenderResourceHistogram(gantt) {
 
     var capacityElement = renderHistogramLine(capacityMatrix, timeline, maxCapacity, viewport);
 
-    if (capacityElement && sizes) {
+    if (capacityElement) {
       capacityElement.setAttribute("data-resource-id", resource.id);
       capacityElement.setAttribute(timeline.$config.item_attribute, resource.id);
       capacityElement.style.position = "absolute";
@@ -32657,8 +32589,8 @@ function createTaskDND(timeline, gantt) {
           this._finalize_mouse_up(drag.id, config, drag, e);
         };
 
-        if (finalizingBulkMove && moveCount > 10) {
-          // 10 - arbitrary threshold for bulk dnd at which we start doing complete repaint to refresh
+        if (finalizingBulkMove && moveCount > 25) {
+          // 25 - arbitrary threshold for bulk dnd at which we start doing complete repaint to refresh
           gantt.batchUpdate(function () {
             doFinalize.call(this);
           }.bind(this));
@@ -38106,7 +38038,6 @@ module.exports = function (gantt) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var date_comparator_1 = __webpack_require__(/*! ./date_comparator */ "./sources/ext/auto_scheduling/date_comparator.ts");
 var task_plan_1 = __webpack_require__(/*! ./task_plan */ "./sources/ext/auto_scheduling/task_plan.ts");
 var AlapStrategy = /** @class */ (function () {
     function AlapStrategy() {
@@ -38114,7 +38045,6 @@ var AlapStrategy = /** @class */ (function () {
     AlapStrategy.Create = function (gantt) {
         var instance = new AlapStrategy();
         instance._gantt = gantt;
-        instance._comparator = new date_comparator_1.default(gantt);
         return instance;
     };
     AlapStrategy.prototype.resolveRelationDate = function (taskId, adjacentLinks, plansHash) {
@@ -38134,17 +38064,17 @@ var AlapStrategy = /** @class */ (function () {
             defaultStart = relation.preferredStart;
             var constraintDate = this.getLatestEndDate(relation, plansHash, task);
             var constraintStartDate = this._gantt.calculateEndDate({ start_date: constraintDate, duration: -task.duration, task: task });
-            if (this._comparator.isGreaterOrDefault(maxRelationDate, constraintDate, task)) {
+            if (this.isGreaterOrDefault(maxRelationDate, constraintDate, task)) {
                 maxRelationDate = constraintDate;
             }
-            if (this._comparator.isGreaterOrDefault(defaultStart, constraintStartDate, task) && this._comparator.isGreaterOrDefault(maxEnd, constraintDate, task)) {
+            if (this.isGreaterOrDefault(defaultStart, constraintStartDate, task) && this.isGreaterOrDefault(maxEnd, constraintDate, task)) {
                 maxEnd = constraintDate;
                 maxStart = constraintStartDate;
                 linkId = relation.id;
             }
         }
         if (!relations.length && this._gantt.config.project_end) {
-            if (this._comparator.isGreaterOrDefault(this._gantt.config.project_end, task.end_date, task)) {
+            if (this.isGreaterOrDefault(this._gantt.config.project_end, task.end_date, task)) {
                 maxEnd = this._gantt.config.project_end;
             }
         }
@@ -38163,6 +38093,15 @@ var AlapStrategy = /** @class */ (function () {
             currentPlan.latestSchedulingEnd = maxRelationDate;
         }
         return currentPlan;
+    };
+    AlapStrategy.prototype.isFirstSmaller = function (small, big, task) {
+        if (small.valueOf() < big.valueOf() && this._gantt._hasDuration(small, big, task)) {
+            return true;
+        }
+        return false;
+    };
+    AlapStrategy.prototype.isGreaterOrDefault = function (smallDate, bigDate, task) {
+        return !!(!smallDate || this.isFirstSmaller(bigDate, smallDate, task));
     };
     AlapStrategy.prototype.getSuccessorStartDate = function (id, plansHash) {
         var plan = plansHash[id];
@@ -38205,7 +38144,6 @@ exports.AlapStrategy = AlapStrategy;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var date_comparator_1 = __webpack_require__(/*! ./date_comparator */ "./sources/ext/auto_scheduling/date_comparator.ts");
 var task_plan_1 = __webpack_require__(/*! ./task_plan */ "./sources/ext/auto_scheduling/task_plan.ts");
 var AsapStrategy = /** @class */ (function () {
     function AsapStrategy() {
@@ -38213,7 +38151,6 @@ var AsapStrategy = /** @class */ (function () {
     AsapStrategy.Create = function (gantt) {
         var instance = new AsapStrategy();
         instance._gantt = gantt;
-        instance._comparator = new date_comparator_1.default(gantt);
         return instance;
     };
     AsapStrategy.prototype.resolveRelationDate = function (taskId, adjacentLinks, plansHash) {
@@ -38230,19 +38167,17 @@ var AsapStrategy = /** @class */ (function () {
             // TODO: remove .preferredStart in v7.0
             defaultStart = relation.preferredStart;
             var constraintDate = this.getEarliestStartDate(relation, plansHash, task);
-            if (this._comparator.isSmallerOrDefault(minRelationDate, constraintDate, task)) {
+            if (this.isSmallerOrDefault(minRelationDate, constraintDate, task)) {
                 minRelationDate = constraintDate;
             }
-            if (this._comparator.isSmallerOrDefault(defaultStart, constraintDate, task) &&
-                this._comparator.isSmallerOrDefault(minStart, constraintDate, task)) {
+            if (this.isSmallerOrDefault(defaultStart, constraintDate, task) &&
+                this.isSmallerOrDefault(minStart, constraintDate, task)) {
                 minStart = constraintDate;
                 linkId = relation.id;
             }
         }
         if (!relations.length && this._gantt.config.project_start) {
-            if (this._comparator.isSmallerOrDefault(task.start_date, this._gantt.config.project_start, task) ||
-                // GS-403 - auto_scheduling_strict = true to schedule independent asap tasks to the earliest date, auto_scheduling_strict=false to keep the old behavior
-                (this._gantt.config.auto_scheduling_strict && this._comparator.isGreaterOrDefault(task.start_date, this._gantt.config.project_start, task))) {
+            if (this.isSmallerOrDefault(task.start_date, this._gantt.config.project_start, task)) {
                 minStart = this._gantt.config.project_start;
             }
         }
@@ -38275,6 +38210,18 @@ var AsapStrategy = /** @class */ (function () {
             });
         }
         return currentPlan;
+    };
+    AsapStrategy.prototype.isEqual = function (dateA, dateB, task) {
+        return !this._gantt._hasDuration(dateA, dateB, task);
+    };
+    AsapStrategy.prototype.isFirstSmaller = function (small, big, task) {
+        if (small.valueOf() < big.valueOf() && !this.isEqual(small, big, task)) {
+            return true;
+        }
+        return false;
+    };
+    AsapStrategy.prototype.isSmallerOrDefault = function (smallDate, bigDate, task) {
+        return !!(!smallDate || this.isFirstSmaller(smallDate, bigDate, task));
     };
     AsapStrategy.prototype.getPredecessorEndDate = function (id, plansHash) {
         var plan = plansHash[id];
@@ -38685,42 +38632,6 @@ var ConstraintsHelper = /** @class */ (function () {
     return ConstraintsHelper;
 }());
 exports.ConstraintsHelper = ConstraintsHelper;
-
-
-/***/ }),
-
-/***/ "./sources/ext/auto_scheduling/date_comparator.ts":
-/*!********************************************************!*\
-  !*** ./sources/ext/auto_scheduling/date_comparator.ts ***!
-  \********************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var DateComparator = /** @class */ (function () {
-    function DateComparator(gantt) {
-        this._gantt = gantt;
-    }
-    DateComparator.prototype.isEqual = function (dateA, dateB, task) {
-        return !this._gantt._hasDuration(dateA, dateB, task);
-    };
-    DateComparator.prototype.isFirstSmaller = function (small, big, task) {
-        if (small.valueOf() < big.valueOf() && !this.isEqual(small, big, task)) {
-            return true;
-        }
-        return false;
-    };
-    DateComparator.prototype.isSmallerOrDefault = function (smallDate, bigDate, task) {
-        return !!(!smallDate || this.isFirstSmaller(smallDate, bigDate, task));
-    };
-    DateComparator.prototype.isGreaterOrDefault = function (smallDate, bigDate, task) {
-        return !!(!smallDate || this.isFirstSmaller(bigDate, smallDate, task));
-    };
-    return DateComparator;
-}());
-exports.default = DateComparator;
 
 
 /***/ }),
@@ -39299,10 +39210,6 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
             inlineEditors.attachEvent("onBeforeSave", function (state) {
                 if (autoscheduleColumns_1[state.columnName]) {
                     modifiedTaskId = state.id;
-                    // GS-711. The constraint type set by the user should be saved
-                    if (state.columnName === "constraint_type") {
-                        changedConstraint = true;
-                    }
                 }
                 return true;
             });
@@ -39694,8 +39601,6 @@ var SelectedRegion = /** @class */ (function () {
         }
         this._viewPort.callEvent("onBeforeDragEnd", [this._startPoint, endPoint]);
         this.setEnd(endPoint);
-        // GS-1422. The endDate can be null if we drag the mouse outside the Gantt container
-        this._endDate = this._endDate || gantt.getState().max_date;
         if (this._startDate.valueOf() > this._endDate.valueOf()) {
             _a = [this._endDate, this._startDate], this._startDate = _a[0], this._endDate = _a[1];
         }
@@ -42670,15 +42575,8 @@ module.exports = function (gantt) {
 
         if (pos.top < scroll.y || pos.top + height > scroll.y + viewHeight) {
           gantt.scrollTo(null, pos.top - height * 5);
-        } else if (gantt.config.scroll_on_click && gantt.config.show_chart) {
-          // horizontal scroll activated
-          if (pos.left > scroll.x + viewWidth) {
-            // scroll forward to the start of the task
-            gantt.scrollTo(pos.left - gantt.config.task_scroll_offset);
-          } else if (pos.left + pos.width < scroll.x) {
-            // scroll back to the end of the task
-            gantt.scrollTo(pos.left + pos.width - gantt.config.task_scroll_offset);
-          }
+        } else if (gantt.config.scroll_on_click && gantt.config.show_chart && (pos.left < scroll.x || pos.left > scroll.x + viewWidth)) {
+          gantt.scrollTo(pos.left - gantt.config.task_scroll_offset);
         }
       }
 
@@ -43556,13 +43454,10 @@ function default_1(gantt) {
         return gantt.templates.task_time(start, end, ev);
     };
     gantt.templates.quick_info_class = function (start, end, task) { return ""; };
-    gantt.attachEvent("onTaskClick", function (id, e) {
-        // GS-1460 Don't show Quick Info when clicking on the "+" button
-        if (!gantt.utils.dom.closest(e.target, ".gantt_add")) {
-            setTimeout(function () {
-                gantt.ext.quickInfo.show(id);
-            }, 0);
-        }
+    gantt.attachEvent("onTaskClick", function (id) {
+        setTimeout(function () {
+            gantt.ext.quickInfo.show(id);
+        }, 0);
         return true;
     });
     var events = ["onViewChange", "onLightbox", "onBeforeTaskDelete", "onBeforeDrag"];
@@ -45187,7 +45082,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 function DHXGantt() {
   this.constants = __webpack_require__(/*! ../constants */ "./sources/constants/index.js");
-  this.version = "7.1.5";
+  this.version = "7.1.3";
   this.license = "enterprise";
   this.templates = {};
   this.ext = {};
