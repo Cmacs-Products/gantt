@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxGantt v.7.1.5 Professional
+dhtmlxGantt v.7.1.6 Professional
 
 This software is covered by DHTMLX Enterprise License. Usage without proper license is prohibited.
 
@@ -11267,9 +11267,18 @@ DataStore.prototype = {
     this.refresh();
   },
   silent: function silent(code, master) {
+    var alreadySilent = false;
+
+    if (this._skip_refresh) {
+      alreadySilent = true;
+    }
+
     this._skip_refresh = true;
     code.call(master || this);
-    this._skip_refresh = false;
+
+    if (!alreadySilent) {
+      this._skip_refresh = false;
+    }
   },
   arraysEqual: function arraysEqual(arr1, arr2) {
     if (arr1.length !== arr2.length) return false;
@@ -13125,7 +13134,15 @@ var createDatastoreFacade = function createDatastoreFacade() {
       });
     },
     clearAll: function clearAll() {
-      var stores = getDatastores.call(this);
+      var stores = getDatastores.call(this); // clear all stores without invoking clearAll event
+      // in order to prevent calling handlers when only some stores are cleared
+
+      for (var i = 0; i < stores.length; i++) {
+        stores[i].silent(function () {
+          stores[i].clearAll();
+        });
+      } // run clearAll again to invoke events
+
 
       for (var i = 0; i < stores.length; i++) {
         stores[i].clearAll();
@@ -16583,6 +16600,13 @@ module.exports = function (gantt) {
 
     if (gantt.isSummaryTask(target) && gantt.isChildOf(source.id, target.id) || gantt.isSummaryTask(source) && gantt.isChildOf(target.id, source.id)) {
       return relations;
+    }
+
+    var backwardsScheduling = gantt.config.schedule_from_end && gantt.config.project_end;
+    var respectTargetOffset = gantt.config.auto_scheduling_move_projects;
+
+    if (!gantt.config.auto_scheduling_compatibility && gantt.config.auto_scheduling_strict) {
+      respectTargetOffset = false;
     } // there are three kinds of connections at this point
     // task -> task - regular link
     // task -> project - transform it into set of regular links (task -> [each subtask]), use offset beetween subtask and project dates as lag, in order not to change mutual positions of subtasks inside a project
@@ -16590,15 +16614,27 @@ module.exports = function (gantt) {
     // project -> project - transform it into ([each subtask of p1] -> [each subtask of p2]) links
 
 
+    var sourceDates = this.isSummaryTask(source) ? this.getSubtaskDates(source.id) : {
+      start_date: source.start_date,
+      end_date: source.end_date
+    };
+
     var from = this._getImplicitLinks(link, source, function (c) {
-      return 0;
+      if (!respectTargetOffset || !backwardsScheduling) {
+        return 0;
+      } else {
+        if (!c.$source.length && !(gantt.getState("tasksDnd").drag_id == c.id)) {
+          // drag_id - virtual lag shouldn't restrict task that is being moved inside project
+          return gantt.calculateDuration({
+            start_date: c.end_date,
+            end_date: sourceDates.end_date,
+            task: source
+          });
+        } else {
+          return 0;
+        }
+      }
     }, true);
-
-    var respectTargetOffset = gantt.config.auto_scheduling_move_projects;
-
-    if (!gantt.config.auto_scheduling_compatibility && gantt.config.auto_scheduling_strict) {
-      respectTargetOffset = false;
-    }
 
     var targetDates = this.isSummaryTask(target) ? this.getSubtaskDates(target.id) : {
       start_date: target.start_date,
@@ -16606,7 +16642,7 @@ module.exports = function (gantt) {
     };
 
     var to = this._getImplicitLinks(link, target, function (c) {
-      if (!respectTargetOffset) {
+      if (!respectTargetOffset || backwardsScheduling) {
         return 0;
       } else {
         if (!c.$target.length && !(gantt.getState("tasksDnd").drag_id == c.id)) {
@@ -19494,7 +19530,10 @@ function createResizer(gantt, grid) {
       grid.callEvent("onColumnResizeComplete", [columns, grid._setColumnsWidth(columns_width, index)]);
 
       if (!grid.$config.scrollable) {
-        gantt.$layout._syncCellSizes(grid.$config.group, config.grid_width);
+        gantt.$layout._syncCellSizes(grid.$config.group, {
+          value: config.grid_width,
+          isGravity: false
+        });
       } //grid.callEvent("onColumnResizeComplete", [columns, columns_width]);
 
 
@@ -21289,6 +21328,8 @@ var Layout = function (_super) {
     if (!cells.length) return;
     var property = cells[0].$parent._xLayout ? "width" : "height";
     var direction = cells[0].$parent.getNextSibling(cells[0].$id) ? 1 : -1;
+    var newSizeValue = newSize.value;
+    var isGravity = newSize.isGravity;
 
     for (var i = 0; i < cells.length; i++) {
       var ownSize = cells[i].getSize();
@@ -21300,21 +21341,25 @@ var Layout = function (_super) {
 
       var siblingSize = resizeSibling.getSize();
 
-      if (resizeSibling[property]) {
-        var totalGravity = ownSize.gravity + siblingSize.gravity;
-        var totalSize = ownSize[property] + siblingSize[property];
-        var k = totalGravity / totalSize;
-        cells[i].$config.gravity = k * newSize;
-        resizeSibling.$config[property] = totalSize - newSize;
-        resizeSibling.$config.gravity = totalGravity - k * newSize;
+      if (!isGravity) {
+        if (resizeSibling[property]) {
+          var totalGravity = ownSize.gravity + siblingSize.gravity;
+          var totalSize = ownSize[property] + siblingSize[property];
+          var k = totalGravity / totalSize;
+          cells[i].$config.gravity = k * newSizeValue;
+          resizeSibling.$config[property] = totalSize - newSizeValue;
+          resizeSibling.$config.gravity = totalGravity - k * newSizeValue;
+        } else {
+          cells[i].$config[property] = newSizeValue;
+        }
       } else {
-        cells[i].$config[property] = newSize;
+        cells[i].$config.gravity = newSizeValue;
       }
 
       var mainGrid = this.$gantt.$ui.getView("grid");
 
-      if (mainGrid && cells[i].$content === mainGrid && !mainGrid.$config.scrollable) {
-        this.$gantt.config.grid_width = newSize;
+      if (mainGrid && cells[i].$content === mainGrid && !mainGrid.$config.scrollable && !isGravity) {
+        this.$gantt.config.grid_width = newSizeValue;
       }
     }
   };
@@ -22447,9 +22492,17 @@ var ResizerCell = function (_super) {
 
 
   ResizerCell.prototype._getNewSizes = function () {
-    var behindSize = this._xMode ? this._behind.$config.width : this._behind.$config.height;
-    var frontSize = this._xMode ? this._front.$config.width : this._front.$config.height;
-    var position = this._xMode ? this._positions.nextX : this._positions.nextY;
+    var behindSize, frontSize, position;
+
+    if (this._xMode) {
+      behindSize = this._behind.$config.width;
+      frontSize = this._front.$config.width;
+      position = this._positions.nextX;
+    } else {
+      behindSize = this._behind.$config.height;
+      frontSize = this._front.$config.height;
+      position = this._positions.nextY;
+    }
 
     if (!frontSize && !behindSize) {
       return null;
@@ -22494,11 +22547,50 @@ var ResizerCell = function (_super) {
       this._assignNewSizes(newSizes);
 
       var side = this._xMode ? 'width' : 'height';
+      var resizeValue;
 
-      if (this._front.$config.group) {
-        this.$gantt.$layout._syncCellSizes(this._front.$config.group, this._front.$config[side]);
-      } else if (this._behind.$config.group) {
-        this.$gantt.$layout._syncCellSizes(this._behind.$config.group, this._behind.$config[side]);
+      if (!newSizes || !newSizes.front) {
+        if (this._front.$config.group) {
+          resizeValue = {
+            value: this._front.$config.gravity,
+            isGravity: true
+          };
+
+          this.$gantt.$layout._syncCellSizes(this._front.$config.group, resizeValue);
+        }
+      }
+
+      if (!newSizes || !newSizes.back) {
+        if (this._behind.$config.group) {
+          resizeValue = {
+            value: this._behind.$config.gravity,
+            isGravity: true
+          };
+
+          this.$gantt.$layout._syncCellSizes(this._behind.$config.group, resizeValue);
+        }
+      }
+
+      if (newSizes) {
+        if (newSizes.front) {
+          if (this._front.$config.group) {
+            resizeValue = {
+              value: this._front.$config[side],
+              isGravity: false
+            };
+
+            this.$gantt.$layout._syncCellSizes(this._front.$config.group, resizeValue);
+          }
+        } else if (newSizes.back) {
+          if (this._behind.$config.group) {
+            resizeValue = {
+              value: this._behind.$config[side],
+              isGravity: false
+            };
+
+            this.$gantt.$layout._syncCellSizes(this._behind.$config.group, resizeValue);
+          }
+        }
       }
 
       if (this._getGroupName()) {
@@ -25738,7 +25830,19 @@ var initializer = function () {
             if (grid_limits[1] && gantt.config.grid_width > grid_limits[1]) gantt.config.grid_width = grid_limits[1];
 
             if (mainTimeline && gantt.config.show_chart) {
-              mainGrid.$config.width = gantt.config.grid_width - 1;
+              mainGrid.$config.width = gantt.config.grid_width - 1; // GS-1314: Don't let the non-scrollable grid to be larger than the container
+
+              if (!mainGrid.$config.scrollable && mainGrid.$config.scrollY) {
+                var ganttContainerWidth = mainGrid.$gantt.$layout.$container.offsetWidth;
+                var verticalScrollbar = gantt.$ui.getView(mainGrid.$config.scrollY);
+                var verticalScrollbarWidth = verticalScrollbar.$config.width;
+                var gridOverflow = ganttContainerWidth - (mainGrid.$config.width + verticalScrollbarWidth);
+
+                if (gridOverflow < 0) {
+                  mainGrid.$config.width += gridOverflow;
+                  gantt.config.grid_width += gridOverflow;
+                }
+              }
 
               if (!first) {
                 if (mainTimeline && !domHelpers.isChildOf(mainTimeline.$task, layout.$view)) {
@@ -25758,13 +25862,19 @@ var initializer = function () {
                 } else {
                   mainGrid.$parent._setContentSize(mainGrid.$config.width, null);
 
-                  gantt.$layout._syncCellSizes(mainGrid.$parent.$config.group, gantt.config.grid_width);
+                  gantt.$layout._syncCellSizes(mainGrid.$parent.$config.group, {
+                    value: gantt.config.grid_width,
+                    isGravity: false
+                  });
                 }
               } else {
                 mainGrid.$parent.$config.width = gantt.config.grid_width;
 
                 if (mainGrid.$parent.$config.group) {
-                  gantt.$layout._syncCellSizes(mainGrid.$parent.$config.group, mainGrid.$parent.$config.width);
+                  gantt.$layout._syncCellSizes(mainGrid.$parent.$config.group, {
+                    value: mainGrid.$parent.$config.width,
+                    isGravity: false
+                  });
                 }
               }
             } else {
@@ -25800,7 +25910,14 @@ var initializer = function () {
         if (horizontal) {
           horizontal.attachEvent("onScroll", function (oldPos, newPos, dir) {
             var scrollState = gantt.getScrollState();
-            gantt.callEvent("onGanttScroll", [oldPos, scrollState.y, newPos, scrollState.y]);
+            gantt.callEvent("onGanttScroll", [oldPos, scrollState.y, newPos, scrollState.y]); // if the grid doesn't fit the width, scroll the row container
+
+            var grid = gantt.$ui.getView("grid");
+
+            if (grid && grid.$grid_data && !grid.$config.scrollable) {
+              grid.$grid_data.style.left = grid.$grid.scrollLeft + "px";
+              grid.$grid_data.scrollLeft = grid.$grid.scrollLeft;
+            }
           });
         }
 
@@ -25852,6 +25969,11 @@ var initializer = function () {
         if (resizeInfo.resizer) {
           var gridFirst = resizeInfo.gridFirst,
               next = resizeInfo.resizer;
+
+          if (next.$config.mode !== "x") {
+            return; // track only horizontal resize
+          }
+
           var initialWidth;
           next.attachEvent("onResizeStart", function (prevCellWidth, nextCellWidth) {
             var grid = gantt.$ui.getView("grid");
@@ -25884,7 +26006,8 @@ var initializer = function () {
 
             var res = gantt.callEvent("onGridResizeEnd", [oldSize, newSize]);
 
-            if (res) {
+            if (res && newSize !== 0) {
+              // new size may be numeric zero when cell size is defined by 'gravity', actual size will be calculated by layout later
               gantt.config.grid_width = newSize;
             }
 
@@ -28342,6 +28465,8 @@ var rendererFactory = function rendererFactory(gantt) {
           renderedItems[i] = true;
         }
 
+        var renderCalledFor = {};
+
         for (var i = 0, vis = items.length; i < vis; i++) {
           var item = items[i];
           var itemNode = this.rendered[item.id];
@@ -28366,6 +28491,7 @@ var rendererFactory = function rendererFactory(gantt) {
               this.restore(item, buffer);
             }
           } else {
+            renderCalledFor[items[i].id] = true;
             this.render_item(items[i], buffer, viewPort, view, viewConfig);
           }
         }
@@ -28384,7 +28510,7 @@ var rendererFactory = function rendererFactory(gantt) {
           var newElements = {};
 
           for (var i in this.rendered) {
-            if (!renderedItems[i]) {
+            if (!renderedItems[i] || renderCalledFor[i]) {
               newElements[i] = this.rendered[i];
               renderCallbackMethod.call(gantt, itemsSearch[i], this.rendered[i], view);
             }
@@ -36389,7 +36515,7 @@ CalendarWorkTimeStrategy.prototype = {
 
       var timezoneDifference = next.getTimezoneOffset() - current.getTimezoneOffset();
 
-      if (timezoneDifference < 0 && step > 0) {
+      if (timezoneDifference < 0 && step > 0 && unit != "day") {
         // the step parameter is for backward scheduling and startDate calcuation
         next.setTime(next.getTime() + 60 * 1000 * timezoneDifference);
       }
@@ -45187,7 +45313,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 function DHXGantt() {
   this.constants = __webpack_require__(/*! ../constants */ "./sources/constants/index.js");
-  this.version = "7.1.5";
+  this.version = "7.1.6";
   this.license = "enterprise";
   this.templates = {};
   this.ext = {};
