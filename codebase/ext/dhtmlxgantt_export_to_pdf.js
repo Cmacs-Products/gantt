@@ -1,6 +1,6 @@
 (function () {
 
-    var apiUrl = "https://schexport.plantobuild.de/gantt/"; 
+    var apiUrl = "https://schexporttest.plantobuild.online/gantt/"; 
 
     var templates = [
         "leftside_text",

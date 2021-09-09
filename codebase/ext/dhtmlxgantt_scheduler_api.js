@@ -80,7 +80,7 @@
 
         scheduler._ajax_to_export = function (data, type, callback) {
             delete data.callback;
-            var url = data.server || "https://schexport.dev.plantobuild.de/scheduler/";
+            var url = data.server || "https://schexporttest.plantobuild.online/scheduler/";
 
             dhtmlxAjax.post(url,
                 "type=" + type + "&store=1&data=" + encodeURIComponent(JSON.stringify(data)),
@@ -148,7 +148,7 @@
 
             var form = this._create_hidden_form();
 
-            form.firstChild.action = data.server || "https://schexport.dev.plantobuild.de/scheduler/";
+            form.firstChild.action = data.server || "https://schexporttest.plantobuild.online/scheduler/";
             form.firstChild.childNodes[0].value = JSON.stringify(data);
             form.firstChild.childNodes[1].value = type;
             form.firstChild.submit();
