@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxGantt v.7.1.6 Professional
+dhtmlxGantt v.7.1.8 Professional
 
 This software is covered by DHTMLX Enterprise License. Usage without proper license is prohibited.
 
@@ -283,7 +283,7 @@ div.gantt_scale_line:last-child::after {
 div.gantt_cal_light {
   border: 0px;
   box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.2), 0 0 3px 1px rgba(0, 0, 0, 0.1);
-  width: 500px;
+  width: 560px;
   padding: 25px;
 }
 div.gantt_cal_light .gantt_cal_ltitle {
@@ -347,6 +347,9 @@ div.gantt_cal_light .gantt_section_time select {
 div.gantt_cal_light select:focus {
   outline-color: rgba(68, 138, 255, 0.9);
   box-shadow: none;
+}
+div.gantt_cal_light_wide {
+  width: 650px;
 }
 .gantt_popup_button {
   float: right;
