@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxGantt v.7.1.8 Professional
+dhtmlxGantt v.7.1.9 Professional
 
 This software is covered by DHTMLX Enterprise License. Usage without proper license is prohibited.
 
@@ -13705,7 +13705,7 @@ function createLayoutFacade() {
 
         for (var i = 0; i < verticalViews.length; i++) {
           for (var j = 0; j < horizontalViews.length; j++) {
-            if (verticalViews[i].$config.id && verticalViews[j].$config.id && verticalViews[i].$config.id === verticalViews[j].$config.id) {
+            if (verticalViews[i].$config.id && horizontalViews[j].$config.id && verticalViews[i].$config.id === horizontalViews[j].$config.id) {
               commonViews.push(verticalViews[i].$config.id);
             }
           }
@@ -18688,11 +18688,7 @@ module.exports = function (gantt) {
 
   function keepDurationOnEdit(item, mapTo) {
     if (mapTo == "end_date") {
-      item.start_date = gantt.calculateEndDate({
-        start_date: item.end_date,
-        duration: -item.duration,
-        task: item
-      });
+      item.start_date = decreaseStartDate(item);
     } else if (mapTo == "start_date" || mapTo == "duration") {
       item.end_date = gantt.calculateEndDate(item);
     }
@@ -18702,11 +18698,27 @@ module.exports = function (gantt) {
 
 
   function defaultActionOnEdit(item, mapTo) {
-    if (mapTo == "start_date" || mapTo == "duration") {
-      item.end_date = gantt.calculateEndDate(item);
-    } else if (mapTo == "end_date") {
-      item.duration = gantt.calculateDuration(item);
+    if (gantt.config.schedule_from_end) {
+      if (mapTo == "end_date" || mapTo == "duration") {
+        item.start_date = decreaseStartDate(item);
+      } else if (mapTo == "start_date") {
+        item.duration = gantt.calculateDuration(item);
+      }
+    } else {
+      if (mapTo == "start_date" || mapTo == "duration") {
+        item.end_date = gantt.calculateEndDate(item);
+      } else if (mapTo == "end_date") {
+        item.duration = gantt.calculateDuration(item);
+      }
     }
+  }
+
+  function decreaseStartDate(item) {
+    return gantt.calculateEndDate({
+      start_date: item.end_date,
+      duration: -item.duration,
+      task: item
+    });
   }
 };
 
@@ -22031,7 +22043,7 @@ var Layout = function (_super) {
     var oldVisibleCells = this._visibleCells || {};
     var firstCall = !this._visibleCells;
     var visibleCells = {};
-    var cell;
+    var cell = null;
     var parentVisibility = [];
 
     for (var i = 0; i < this._sizes.length; i++) {
@@ -25767,7 +25779,7 @@ module.exports = function (gantt) {
         range = range || 10;
         offset = offset || Math.floor(range / 2);
         start_year = start_year || settings.date.getFullYear() - offset;
-        end_year = end_year || start_year + range;
+        end_year = end_year || gantt.getState().max_date.getFullYear() + offset;
 
         for (i = start_year; i < end_year; i++) {
           html += "<option value='" + i + "'>" + i + "</option>";
@@ -25982,9 +25994,9 @@ var initializer = function () {
             if (grid_limits[1] && gantt.config.grid_width > grid_limits[1]) gantt.config.grid_width = grid_limits[1];
 
             if (mainTimeline && gantt.config.show_chart) {
-              mainGrid.$config.width = gantt.config.grid_width - 1; // GS-1314: Don't let the non-scrollable grid to be larger than the container
+              mainGrid.$config.width = gantt.config.grid_width - 1; // GS-1314: Don't let the non-scrollable grid to be larger than the container with the correct width
 
-              if (!mainGrid.$config.scrollable && mainGrid.$config.scrollY) {
+              if (!mainGrid.$config.scrollable && mainGrid.$config.scrollY && gantt.$root.offsetWidth) {
                 var ganttContainerWidth = mainGrid.$gantt.$layout.$container.offsetWidth;
                 var verticalScrollbar = gantt.$ui.getView(mainGrid.$config.scrollY);
                 var verticalScrollbarWidth = verticalScrollbar.$config.width;
@@ -26687,7 +26699,7 @@ var createMouseHandler = function (domHelpers) {
         if (!default_action) return;
 
         if (id !== null && gantt.getTask(id)) {
-          if (res && gantt.config.details_on_dblclick && !gantt.isReadonly()) {
+          if (res && gantt.config.details_on_dblclick && !gantt.isReadonly(id)) {
             gantt.showLightbox(id);
           }
         }
@@ -32617,11 +32629,17 @@ function createTaskDND(timeline, gantt) {
 
       return correctShift;
     },
-    _move: function _move(task, shift, drag) {
+    _move: function _move(task, shift, drag, multipleDragShift) {
       var coords_x = this._drag_task_coords(task, drag);
 
-      var new_start = gantt.dateFromPos(coords_x.start + shift),
-          new_end = gantt.dateFromPos(coords_x.end + shift);
+      var new_start = null,
+          new_end = null; // GS-454: If we drag multiple tasks, rely on the dates instead of timeline coordinates
+
+      if (multipleDragShift) {
+        new_start = new Date(+drag.obj.start_date + multipleDragShift), new_end = new Date(+drag.obj.end_date + multipleDragShift);
+      } else {
+        new_start = gantt.dateFromPos(coords_x.start + shift), new_end = gantt.dateFromPos(coords_x.end + shift);
+      }
 
       if (!new_start) {
         task.start_date = new Date(gantt.getState().min_date);
@@ -32673,12 +32691,12 @@ function createTaskDND(timeline, gantt) {
         this._update_on_move(e);
       }
     },
-    _update_item_on_move: function _update_item_on_move(shift, id, mode, drag, e) {
+    _update_item_on_move: function _update_item_on_move(shift, id, mode, drag, e, multipleDragShift) {
       var task = gantt.getTask(id);
       var original = gantt.mixin({}, task);
       var copy = gantt.mixin({}, task);
 
-      this._handlers[mode].apply(this, [copy, shift, drag]);
+      this._handlers[mode].apply(this, [copy, shift, drag, multipleDragShift]);
 
       gantt.mixin(task, copy, true); //gantt._update_parents(drag.id, true);
 
@@ -32733,9 +32751,15 @@ function createTaskDND(timeline, gantt) {
 
               if (dragProject && childDrag.id != drag.id) {
                 gantt._bulk_dnd = true;
+              } // GS-454: Calculate the date shift in milliseconds instead of pixels
+
+
+              if (maxShift === undefined && (dragProject || Object.keys(dragHash).length > 1)) {
+                var shiftDate = gantt.dateFromPos(drag.start_x);
+                var multipleDragShift = curr_date - shiftDate;
               }
 
-              this._update_item_on_move(shift, childDrag.id, childDrag.mode, childDrag, e);
+              this._update_item_on_move(shift, childDrag.id, childDrag.mode, childDrag, e, multipleDragShift);
             }
 
             gantt._bulk_dnd = false;
@@ -38542,6 +38566,10 @@ var AlapStrategy = /** @class */ (function () {
             if (this._comparator.isGreaterOrDefault(this._gantt.config.project_end, task.end_date, task)) {
                 maxEnd = this._gantt.config.project_end;
             }
+            // GS-1152. don't process tasks with cancelled auto-scheduling
+            if (this._gantt.callEvent("onBeforeTaskAutoSchedule", [task, task.end_date]) === false) {
+                maxEnd = task.end_date;
+            }
         }
         if (maxEnd) {
             maxEnd = this._gantt.getClosestWorkTime({ date: maxEnd, dir: "future", task: task });
@@ -38639,6 +38667,10 @@ var AsapStrategy = /** @class */ (function () {
                 // GS-403 - auto_scheduling_strict = true to schedule independent asap tasks to the earliest date, auto_scheduling_strict=false to keep the old behavior
                 (this._gantt.config.auto_scheduling_strict && this._comparator.isGreaterOrDefault(task.start_date, this._gantt.config.project_start, task))) {
                 minStart = this._gantt.config.project_start;
+            }
+            // GS-1152. don't process tasks with cancelled auto-scheduling
+            if (this._gantt.callEvent("onBeforeTaskAutoSchedule", [task, task.start_date]) === false) {
+                minStart = task.start_date;
             }
         }
         var maxEnd = null;
@@ -38941,6 +38973,10 @@ var ConstraintsHelper = /** @class */ (function () {
             return !_this.isAsapTask(task);
         };
         this.getConstraintType = function (task) {
+            // GS-1487. Don't add a constraint if auto-scheduling is cancelled
+            if (task.auto_scheduling === false) {
+                return;
+            }
             // in case of backward scheduling, tasks without explicit constraints are considered ALAP tasks
             if (task.constraint_type) {
                 return task.constraint_type;
@@ -39268,6 +39304,9 @@ var AutoSchedulingPlanner = /** @class */ (function () {
         for (var i = 0; i < mainSequence.length; i++) {
             var currentId = mainSequence[i];
             var task = gantt.getTask(currentId);
+            if (task.auto_scheduling === false) {
+                continue;
+            }
             var plan = mainSequenceStrategy.resolveRelationDate(currentId, relationsMap[currentId], plansHash);
             this.limitPlanDates(task, plan);
             if (isMainSequence(task)) {
@@ -39280,6 +39319,9 @@ var AutoSchedulingPlanner = /** @class */ (function () {
         for (var i = 0; i < secondarySequence.length; i++) {
             var currentId = secondarySequence[i];
             var task = gantt.getTask(currentId);
+            if (task.auto_scheduling === false) {
+                continue;
+            }
             if (!isMainSequence(task)) {
                 var plan = secondarySequenceStrategy.resolveRelationDate(currentId, relationsMap[currentId], plansHash);
                 this.limitPlanDates(task, plan);
@@ -39636,7 +39678,24 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
                 }
             }
         }
+        // GS-686. We shouldn't change the constraint after changing only the duration or end_date
+        function shouldKeepConstraints(task, oldTask) {
+            if (gantt.config.schedule_from_end) {
+                if (task.end_date.valueOf() === oldTask.end_date.valueOf()) {
+                    return true;
+                }
+            }
+            else {
+                if (task.start_date.valueOf() === oldTask.start_date.valueOf()) {
+                    return true;
+                }
+            }
+        }
         function updateTaskConstraints(task) {
+            // GS-1487. Don't add a constraint if auto-scheduling is cancelled
+            if (task.auto_scheduling === false) {
+                return;
+            }
             if (gantt.config.schedule_from_end) {
                 task.constraint_type = gantt.config.constraint_types.FNLT;
                 task.constraint_date = new Date(task.end_date);
@@ -39660,7 +39719,12 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
             if (gantt.config.auto_scheduling && !gantt._autoscheduling_in_progress) {
                 var newTask = gantt.getTask(taskId);
                 if (_notEqualTaskDates(task, newTask)) {
-                    updateTaskConstraints(newTask);
+                    if (shouldKeepConstraints(newTask, task)) {
+                        // don't change constraints
+                    }
+                    else {
+                        updateTaskConstraints(newTask);
+                    }
                     if (gantt.config.auto_scheduling_move_projects &&
                         // tslint:disable-next-line triple-equals
                         movedTask == taskId) {
@@ -39698,6 +39762,17 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
                     if (state.columnName === "constraint_type") {
                         changedConstraint = true;
                     }
+                    // GS-686. We shouldn't change the constraint after changing only the duration or end_date
+                    var durationColumn = state.columnName === "duration";
+                    var startDateColumn = gantt.config.schedule_from_end && (state.columnName === "start_date");
+                    var endDateColumn = !gantt.config.schedule_from_end && (state.columnName === "end_date");
+                    var linkedDateModification = gantt.config.inline_editors_date_processing !== "keepDuration";
+                    var linkedColumnEdit = linkedDateModification && (startDateColumn || endDateColumn);
+                    var keepConstraints = durationColumn || linkedColumnEdit;
+                    if (keepConstraints) {
+                        var task = gantt.getTask(state.id);
+                        task.$keep_constraints = true;
+                    }
                 }
                 return true;
             });
@@ -39709,6 +39784,9 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
                 var oldTask = gantt.getTask(taskId);
                 if (_notEqualTaskDates(task, oldTask)) {
                     modifiedTaskId = taskId;
+                    if (shouldKeepConstraints(task, oldTask)) {
+                        task.$keep_constraints = true;
+                    }
                     if (gantt.getConstraintType(task) !== gantt.getConstraintType(oldTask) ||
                         +task.constraint_date !== +oldTask.constraint_date) {
                         changedConstraint = true;
@@ -39723,7 +39801,10 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
                     // tslint:disable-next-line triple-equals
                     modifiedTaskId == taskId) {
                     modifiedTaskId = null;
-                    if (!changedConstraint) {
+                    if (task.$keep_constraints) {
+                        delete task.$keep_constraints;
+                    }
+                    else if (!changedConstraint) {
                         updateTaskConstraints(task);
                     }
                     gantt.autoSchedule(task.id);
@@ -45679,7 +45760,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 function DHXGantt() {
   this.constants = __webpack_require__(/*! ../constants */ "./sources/constants/index.js");
-  this.version = "7.1.8";
+  this.version = "7.1.9";
   this.license = "enterprise";
   this.templates = {};
   this.ext = {};
