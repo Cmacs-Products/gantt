@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxGantt v.7.1.6 Professional
+dhtmlxGantt v.7.1.10 Professional
 
 This software is covered by DHTMLX Enterprise License. Usage without proper license is prohibited.
 
@@ -7906,7 +7906,7 @@ var timeout = __webpack_require__(/*! ../../utils/timeout */ "./sources/utils/ti
 
 var global = __webpack_require__(/*! ../../utils/global */ "./sources/utils/global.js");
 
-var dom_helpers = __webpack_require__(/*! ../ui/utils/dom_helpers */ "./sources/core/ui/utils/dom_helpers.js");
+var domHelpers = __webpack_require__(/*! ../ui/utils/dom_helpers */ "./sources/core/ui/utils/dom_helpers.js");
 
 module.exports = function (gantt) {
   function copyDomEvent(e) {
@@ -7944,7 +7944,7 @@ module.exports = function (gantt) {
             return;
           }
 
-          if (config.preventDefault && config.selector && dom_helpers.closest(e.target, config.selector)) {
+          if (config.preventDefault && config.selector && domHelpers.closest(e.target, config.selector)) {
             e.preventDefault();
           }
 
@@ -7967,7 +7967,8 @@ module.exports = function (gantt) {
             this.dragStart(obj, e, input);
           }
         }, this), eventParams);
-        gantt.event(document.body, input.up, utils.bind(function (e) {
+        var eventElement = document.body;
+        gantt.event(eventElement, input.up, utils.bind(function (e) {
           if (!input.accessor(e)) {
             return;
           }
@@ -8007,17 +8008,18 @@ module.exports = function (gantt) {
 
         return dndActive;
       }, this);
-      var mousemoveContainer = this.config.mousemoveContainer || document.body;
+      var eventElement = domHelpers.getRootNode(gantt.$root);
+      var mousemoveContainer = this.config.mousemoveContainer || domHelpers.getRootNode(gantt.$root);
       var eventParams = {
         passive: false
       };
       var mouseup = utils.bind(function (e) {
-        gantt.eventRemove(mousemoveContainer, inputMethod.move, limited_mousemove, eventParams);
-        gantt.eventRemove(document.body, inputMethod.up, mouseup, eventParams);
+        gantt.eventRemove(mousemoveContainer, inputMethod.move, limited_mousemove);
+        gantt.eventRemove(eventElement, inputMethod.up, mouseup, eventParams);
         return this.dragEnd(domElement);
       }, this);
       gantt.event(mousemoveContainer, inputMethod.move, limited_mousemove, eventParams);
-      gantt.event(document.body, inputMethod.up, mouseup, eventParams);
+      gantt.event(eventElement, inputMethod.up, mouseup, eventParams);
     },
     checkPositionChange: function checkPositionChange(pos) {
       var diff_x = pos.x - this.config.pos.x;
@@ -9231,7 +9233,11 @@ module.exports = function (gantt) {
       this._lightbox_id = null;
       store.silent(function () {
         store.unselect();
-      });
+      }); // GS-1522. If we have multiselect, unselect all previously selected tasks
+
+      if (this.getSelectedTasks) {
+        this._multiselect.reset();
+      }
 
       if (this._tasks_dnd && this._tasks_dnd.drag) {
         this._tasks_dnd.drag.id = null;
@@ -9855,7 +9861,17 @@ var DataProcessor = /** @class */ (function () {
             this.$gantt.editStop();
         }
         if (typeof rowId === "undefined" || this._tSend) {
-            return this.sendAllData();
+            var updatedTasksAndLinks = this.modes && this.modes["task"] && this.modes["link"] && this.modes["task"].updatedRows.length && this.modes["link"].updatedRows.length; // tslint:disable-line
+            if (updatedTasksAndLinks) {
+                this.setGanttMode("task");
+                this.sendAllData();
+                this.setGanttMode("link");
+                this.sendAllData();
+                return;
+            }
+            else {
+                return this.sendAllData();
+            }
         }
         if (this._in_progress[rowId]) {
             return false;
@@ -11026,6 +11042,8 @@ var utils = __webpack_require__(/*! ../../utils/utils */ "./sources/utils/utils.
 
 var eventable = __webpack_require__(/*! ../../utils/eventable */ "./sources/utils/eventable.js");
 
+var isPlaceholderTask = __webpack_require__(/*! ../../utils/placeholder_task */ "./sources/utils/placeholder_task.js");
+
 var DataStore = function DataStore(config) {
   this.pull = {};
   this.$initItem = config.initItem;
@@ -11086,13 +11104,13 @@ DataStore.prototype = {
     return loaded;
   },
   parse: function parse(data) {
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       this.callEvent("onBeforeParse", [data]);
     }
 
     var loaded = this._parseInner(data);
 
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       this.refresh();
       this.callEvent("onParse", [loaded]);
     }
@@ -11107,7 +11125,7 @@ DataStore.prototype = {
   updateItem: function updateItem(id, item) {
     if (!utils.defined(item)) item = this.getItem(id);
 
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       if (this.callEvent("onBeforeUpdate", [item.id, item]) === false) return false;
     } // This is how it worked before updating the properties:
     // this.pull[id]=item;
@@ -11115,7 +11133,7 @@ DataStore.prototype = {
 
     utils.mixin(this.pull[id], item, true);
 
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       this.callEvent("onAfterUpdate", [item.id, item]);
       this.callEvent("onStoreUpdated", [item.id, item, "update"]);
     }
@@ -11133,7 +11151,7 @@ DataStore.prototype = {
     //utils.assert(this.exists(id), "Not existing ID in remove command"+id);
     var obj = this.getItem(id); //save for later event
 
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       if (this.callEvent("onBeforeDelete", [obj.id, obj]) === false) return false;
     }
 
@@ -11141,7 +11159,7 @@ DataStore.prototype = {
 
     this._removeItemInner(id);
 
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       this.filter();
       this.callEvent("onAfterDelete", [obj.id, obj]); //repaint signal
 
@@ -11170,7 +11188,7 @@ DataStore.prototype = {
 
     this.pull[item.id] = item;
 
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       this._updateOrder(function () {
         if (this.$find(item.id) === -1) this.$insertAt(item.id, index);
       });
@@ -11191,13 +11209,13 @@ DataStore.prototype = {
       item = this.$initItem(item);
     }
 
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       if (this.callEvent("onBeforeAdd", [item.id, item]) === false) return false;
     }
 
     this._addItemInner(item, index);
 
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       this.callEvent("onAfterAdd", [item.id, item]); //repaint signal
 
       this.callEvent("onStoreUpdated", [item.id, item, "add"]);
@@ -11245,7 +11263,7 @@ DataStore.prototype = {
 
     this._moveInner(sindex, tindex);
 
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       //repaint signal
       this.callEvent("onStoreUpdated", [obj.id, obj, "move"]);
     }
@@ -11262,14 +11280,14 @@ DataStore.prototype = {
     this.pull = {};
     this.visibleOrder = powerArray.$create();
     this.fullOrder = powerArray.$create();
-    if (this._skip_refresh) return;
+    if (this.isSilent()) return;
     this.callEvent("onClearAll", []);
     this.refresh();
   },
   silent: function silent(code, master) {
     var alreadySilent = false;
 
-    if (this._skip_refresh) {
+    if (this.isSilent()) {
       alreadySilent = true;
     }
 
@@ -11279,6 +11297,9 @@ DataStore.prototype = {
     if (!alreadySilent) {
       this._skip_refresh = false;
     }
+  },
+  isSilent: function isSilent() {
+    return !!this._skip_refresh;
   },
   arraysEqual: function arraysEqual(arr1, arr2) {
     if (arr1.length !== arr2.length) return false;
@@ -11290,7 +11311,7 @@ DataStore.prototype = {
     return true;
   },
   refresh: function refresh(id, quick) {
-    if (this._skip_refresh) return;
+    if (this.isSilent()) return;
     var item;
 
     if (id) {
@@ -11358,17 +11379,27 @@ DataStore.prototype = {
     return result;
   },
   filter: function filter(rule) {
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       this.callEvent("onBeforeFilter", []);
     }
 
     this.callEvent("onPreFilter", []);
     var filteredOrder = powerArray.$create();
+    var placeholderIds = [];
     this.eachItem(function (item) {
       if (this.callEvent("onFilterItem", [item.id, item])) {
-        filteredOrder.push(item.id);
+        if (isPlaceholderTask(item.id, null, this, this._ganttConfig)) {
+          placeholderIds.push(item.id);
+        } else {
+          filteredOrder.push(item.id);
+        }
       }
     });
+
+    for (var i = 0; i < placeholderIds.length; i++) {
+      filteredOrder.push(placeholderIds[i]);
+    }
+
     this.visibleOrder = filteredOrder;
     this._searchVisibleOrder = {};
 
@@ -11376,7 +11407,7 @@ DataStore.prototype = {
       this._searchVisibleOrder[this.visibleOrder[i]] = i;
     }
 
-    if (!this._skip_refresh) {
+    if (!this.isSilent()) {
       this.callEvent("onFilter", []);
     }
   },
@@ -11474,6 +11505,8 @@ var facadeFactory = __webpack_require__(/*! ./../facades/datastore */ "./sources
 
 var calculateScaleRange = __webpack_require__(/*! ../gantt_data_range */ "./sources/core/gantt_data_range.js");
 
+var isPlaceholderTask = __webpack_require__(/*! ../../utils/placeholder_task */ "./sources/utils/placeholder_task.js");
+
 function initDataStores(gantt) {
   var facade = facadeFactory.create();
   utils.mixin(gantt, facade);
@@ -11550,10 +11583,12 @@ function initDataStores(gantt) {
 
     var changedTask = gantt.getTask(newId);
 
-    if (changedTask.$split_subtask || changedTask.rollup) {
-      gantt.eachParent(function (parent) {
-        gantt.refreshTask(parent.id);
-      }, newId);
+    if (!tasksStore.isSilent()) {
+      if (changedTask.$split_subtask || changedTask.rollup) {
+        gantt.eachParent(function (parent) {
+          gantt.refreshTask(parent.id);
+        }, newId);
+      }
     }
   });
   tasksStore.attachEvent("onAfterUpdate", function (id) {
@@ -11575,6 +11610,16 @@ function initDataStores(gantt) {
     for (var i = 0; i < task.$target.length; i++) {
       linksStore.refresh(task.$target[i]);
     }
+  });
+  tasksStore.attachEvent("onBeforeItemMove", function (sid, parent, tindex) {
+    // GS-125. Don't allow users to move the placeholder task
+    if (isPlaceholderTask(sid, gantt, tasksStore)) {
+      //eslint-disable-next-line
+      console.log("The placeholder task cannot be moved to another position.");
+      return false;
+    }
+
+    return true;
   });
   tasksStore.attachEvent("onAfterItemMove", function (sid, parent, tindex) {
     var source = gantt.getTask(sid);
@@ -12027,9 +12072,11 @@ var storeRenderCreator = function storeRenderCreator(name, gantt) {
       return;
     }
 
-    var renderer = gantt.$services.getService("layers").getDataRender(name);
-    refreshId(renderer.getLayers(), oldId, newId, store.getItem(newId));
-    itemRepainter.renderItem(newId, renderer);
+    if (!store.isSilent()) {
+      var renderer = gantt.$services.getService("layers").getDataRender(name);
+      refreshId(renderer.getLayers(), oldId, newId, store.getItem(newId));
+      itemRepainter.renderItem(newId, renderer);
+    }
   });
 };
 
@@ -12207,6 +12254,8 @@ var helpers = __webpack_require__(/*! ../../utils/helpers */ "./sources/utils/he
 
 var DataStore = __webpack_require__(/*! ./datastore */ "./sources/core/datastore/datastore.js");
 
+var isPlaceholderTask = __webpack_require__(/*! ../../utils/placeholder_task */ "./sources/utils/placeholder_task.js");
+
 var _require = __webpack_require__(/*! ../../utils/helpers */ "./sources/utils/helpers.js"),
     replaceValidZeroId = _require.replaceValidZeroId; // TODO: remove workaround for mixup with es5 and ts imports
 
@@ -12348,7 +12397,7 @@ TreeDataStore.prototype = utils.mixin({
 
     for (var i = 0, len = data.length; i < len; i++) {
       item = data[i];
-      this.setParent(item, this.getParent(item) || rootId);
+      this.setParent(item, replaceValidZeroId(this.getParent(item), rootId) || rootId);
     } // calculating $level for each item
 
 
@@ -12420,8 +12469,14 @@ TreeDataStore.prototype = utils.mixin({
 
     this._replace_branch_child(parent, oldId, newId);
 
+    if (this._branches[oldId]) {
+      this._branches[newId] = this._branches[oldId];
+    }
+
     for (var i = 0; i < children.length; i++) {
-      this.setParent(this.getItem(children[i]), newId);
+      var child = this.getItem(children[i]);
+      child[this.$parentProperty] = newId;
+      child.$rendered_parent = newId;
     }
 
     this._searchVisibleOrder[newId] = visibleOrder;
@@ -12496,6 +12551,15 @@ TreeDataStore.prototype = utils.mixin({
     }
 
     if (this.callEvent("onBeforeItemMove", [sid, parent, tindex]) === false) return false;
+    var placeholderIds = [];
+
+    for (var i = 0; i < tbranch.length; i++) {
+      if (isPlaceholderTask(tbranch[i], null, this, this._ganttConfig)) {
+        placeholderIds.push(tbranch[i]);
+        tbranch.splice(i, 1);
+        i--;
+      }
+    }
 
     this._replace_branch_child(source_pid, sid);
 
@@ -12504,6 +12568,11 @@ TreeDataStore.prototype = utils.mixin({
     tid = replaceValidZeroId(tid, this._ganttConfig.root_id);
     if (!tid) //adding as last element
       tbranch.push(sid);else tbranch = tbranch.slice(0, tindex).concat([sid]).concat(tbranch.slice(tindex));
+
+    if (placeholderIds.length) {
+      tbranch = tbranch.concat(placeholderIds);
+    }
+
     this.setParent(source, parent);
     this._branches[parent] = tbranch;
     var diff = this.calculateItemLevel(source) - source.$level;
@@ -12678,7 +12747,7 @@ TreeDataStore.prototype = utils.mixin({
       parent = rootId;
     }
 
-    var startId = parent || rootId;
+    var startId = replaceValidZeroId(parent, rootId) || rootId;
     var useCache = false;
     var buildCache = false;
     var cache = null;
@@ -13650,7 +13719,7 @@ function createLayoutFacade() {
 
         for (var i = 0; i < verticalViews.length; i++) {
           for (var j = 0; j < horizontalViews.length; j++) {
-            if (verticalViews[i].$config.id && verticalViews[j].$config.id && verticalViews[i].$config.id === verticalViews[j].$config.id) {
+            if (verticalViews[i].$config.id && horizontalViews[j].$config.id && verticalViews[i].$config.id === horizontalViews[j].$config.id) {
               commonViews.push(verticalViews[i].$config.id);
             }
           }
@@ -14255,10 +14324,31 @@ function _init_tasks_range(gantt) {
 
   var unit = cfg.unit,
       step = cfg.step;
-  var range = resolveConfigRange(unit, gantt);
+  var range = resolveConfigRange(unit, gantt); // GS-1544: Show correct date range if we have tasks or only projects
 
   if (!(range.start_date && range.end_date)) {
-    range = gantt.getSubtaskDates();
+    var onlyProjectTasks = true;
+    var tasks = gantt.getTaskByTime();
+
+    for (var i = 0; i < tasks.length; i++) {
+      var task = tasks[i];
+
+      if (task.type !== gantt.config.types.project) {
+        onlyProjectTasks = false;
+        break;
+      }
+    }
+
+    if (tasks.length && onlyProjectTasks) {
+      var start_date = tasks[0].start_date;
+      var end_date = gantt.date.add(start_date, 1, gantt.config.duration_unit);
+      range = {
+        start_date: new Date(start_date),
+        end_date: new Date(end_date)
+      };
+    } else {
+      range = gantt.getSubtaskDates();
+    }
 
     if (!range.start_date || !range.end_date) {
       range = {
@@ -15425,7 +15515,7 @@ module.exports = function (gantt) {
         }
 
         if (detectFormat) {
-          if (res.id && res.task_id && res.resource_id) {
+          if (res.id && res.resource_id) {
             resourceAssignmentFormat = resourceAssignmentFormats.assignmentsArray;
             detectFormat = false;
           } else {
@@ -15442,15 +15532,17 @@ module.exports = function (gantt) {
           }
         }
 
-        var id = res.id;
+        var id;
 
-        if (!id && res.$id && !usedIds[res.$id]) {
+        if (!res.id && res.$id && !usedIds[res.$id]) {
           id = res.$id;
-          usedIds[id] = true;
+        } else if (res.id && !usedIds[res.id]) {
+          id = res.id;
         } else {
           id = gantt.uid();
         }
 
+        usedIds[id] = true;
         var assignment = {
           id: id,
           start_date: res.start_date,
@@ -15475,6 +15567,11 @@ module.exports = function (gantt) {
   }
 
   function _updateTaskBack(taskId) {
+    // GS-1493. In some cases, the resource assignment store has the tasks that no longer exist
+    if (!gantt.isTaskExists(taskId)) {
+      return;
+    }
+
     var task = gantt.getTask(taskId);
     var assignments = gantt.getTaskAssignments(task.id);
 
@@ -15779,6 +15876,13 @@ module.exports = function (gantt) {
         }, id);
 
         _syncOnTaskDelete(deleteIds);
+      });
+      gantt.$data.tasksStore.attachEvent("onClearAll", function () {
+        resourceAssignmentsCache = null;
+        resourceTaskAssignmentsCache = null;
+        taskAssignmentsCache = null;
+        resourceAssignmentsStore.clearAll();
+        return true;
       });
       gantt.attachEvent("onTaskIdChange", function (id, new_id) {
         var taskResources = resourceAssignmentsStore.find(function (a) {
@@ -16669,6 +16773,7 @@ module.exports = function (gantt) {
           type: link.type,
           source: fromTask.task,
           target: toTask.task,
+          subtaskLink: fromTask.subtaskLink,
           lag: (link.lag * 1 || 0) + lag
         };
         relations.push(gantt._convertToFinishToStartLink(toTask.task, subtaskLink, source, target, fromTask.taskParent, toTask.taskParent));
@@ -16720,7 +16825,8 @@ module.exports = function (gantt) {
           relations.push({
             task: task.id,
             taskParent: task.parent,
-            lag: selectOffset(task)
+            lag: selectOffset(task),
+            subtaskLink: true
           });
         }
       }
@@ -16862,7 +16968,8 @@ module.exports = function (gantt) {
       preferredStart: null,
       sourceParent: sourceParent,
       targetParent: targetParent,
-      hashSum: null
+      hashSum: null,
+      subtaskLink: link.subtaskLink
     }; // GS-148: switch uses strict comparison, so we need to convert the values to the same type
 
     var additionalLag = 0;
@@ -18616,11 +18723,7 @@ module.exports = function (gantt) {
 
   function keepDurationOnEdit(item, mapTo) {
     if (mapTo == "end_date") {
-      item.start_date = gantt.calculateEndDate({
-        start_date: item.end_date,
-        duration: -item.duration,
-        task: item
-      });
+      item.start_date = decreaseStartDate(item);
     } else if (mapTo == "start_date" || mapTo == "duration") {
       item.end_date = gantt.calculateEndDate(item);
     }
@@ -18630,11 +18733,27 @@ module.exports = function (gantt) {
 
 
   function defaultActionOnEdit(item, mapTo) {
-    if (mapTo == "start_date" || mapTo == "duration") {
-      item.end_date = gantt.calculateEndDate(item);
-    } else if (mapTo == "end_date") {
-      item.duration = gantt.calculateDuration(item);
+    if (gantt.config.schedule_from_end) {
+      if (mapTo == "end_date" || mapTo == "duration") {
+        item.start_date = decreaseStartDate(item);
+      } else if (mapTo == "start_date") {
+        item.duration = gantt.calculateDuration(item);
+      }
+    } else {
+      if (mapTo == "start_date" || mapTo == "duration") {
+        item.end_date = gantt.calculateEndDate(item);
+      } else if (mapTo == "end_date") {
+        item.duration = gantt.calculateDuration(item);
+      }
     }
+  }
+
+  function decreaseStartDate(item) {
+    return gantt.calculateEndDate({
+      start_date: item.end_date,
+      duration: -item.duration,
+      task: item
+    });
   }
 };
 
@@ -19392,6 +19511,12 @@ function createResizer(gantt, grid) {
       var config = grid.$getConfig();
       var el = domHelpers.locateAttribute(e, config.grid_resizer_column_attribute);
       if (!el) return false;
+
+      if (!domHelpers.closest(el, ".gantt_grid_column_resize_wrap")) {
+        // column resize should work only when we use the resizer
+        return false;
+      }
+
       var column_index = this.locate(e, config.grid_resizer_column_attribute),
           column = grid.getGridColumns()[column_index];
       if (grid.callEvent("onColumnResizeStart", [column_index, column]) === false) return false;
@@ -19456,16 +19581,33 @@ function createResizer(gantt, grid) {
           pointerPosition = minPointerPosition;
         }
 
-        if (pointerPosition > maxPointerPosition) pointerPosition = maxPointerPosition;
+        if (pointerPosition > maxPointerPosition) {
+          pointerPosition = maxPointerPosition;
+        }
       } else if (!grid.$config.scrollable) {
         var targetWidth = pointerPosition;
-        var rightColumnsWidth = 0;
+        var maxWidth = gantt.$container.offsetWidth;
+        var rightColumnsWidth = 0; // 25 is a scrollbar width. due to GS-1314 fix, the grid should always be visible
+        // because of that, the internal grid width can be larger than the visible grid width
 
-        for (var i = index + 1; i < columns.length; i++) {
-          rightColumnsWidth += columns[i].width;
-        }
+        if (grid.$grid_data.offsetWidth <= maxWidth - 25) {
+          for (var i = index + 1; i < columns.length; i++) {
+            rightColumnsWidth += columns[i].width;
+          }
+        } else {
+          // GS-627. When the grid is not scrollable and occupies almost all Gantt container's width
+          for (var i = index + 1; i >= 0; i--) {
+            rightColumnsWidth += columns[i].width;
+          }
 
-        var maxWidth = gantt.$container.offsetWidth; // prevent grid from occupying the whole layout cell, which would disable the timeline
+          rightColumnsWidth = maxWidth - rightColumnsWidth;
+        } // in case if something went wrong in the previous part
+
+
+        if (rightColumnsWidth > maxWidth) {
+          rightColumnsWidth -= maxWidth;
+        } // prevent grid from occupying the whole layout cell, which would disable the timeline
+
 
         var parentLayout = grid.$parent.$parent;
 
@@ -19819,7 +19961,7 @@ function createRowResizer(gantt, grid) {
       var store = grid.$config.rowStore;
       var config = grid.$getConfig();
       var dd = dnd.config;
-      var id = parseInt(dd.drag_id, 10),
+      var id = dd.drag_id,
           itemHeight = grid.getItemHeight(id),
           itemTop = grid.getItemTop(id);
       var pos = domHelpers.getNodePosition(grid.$grid_data),
@@ -19843,7 +19985,7 @@ function createRowResizer(gantt, grid) {
     row_drag_end: gantt.bind(function (dnd, obj, e) {
       var store = grid.$config.rowStore;
       var dd = dnd.config;
-      var id = parseInt(dd.drag_id, 10),
+      var id = dd.drag_id,
           item = store.getItem(id),
           oldItemHeight = grid.getItemHeight(id);
       var finalHeight = dd.marker_height;
@@ -19895,6 +20037,8 @@ module.exports = createRowResizer;
 
 var domHelpers = __webpack_require__(/*! ../utils/dom_helpers */ "./sources/core/ui/utils/dom_helpers.js");
 
+var isPlaceholderTask = __webpack_require__(/*! ../../../utils/placeholder_task */ "./sources/utils/placeholder_task.js");
+
 function _init_dnd(gantt, grid) {
   var DnD = gantt.$services.getService("dnd");
 
@@ -19908,6 +20052,10 @@ function _init_dnd(gantt, grid) {
 
   function getStore() {
     return gantt.getDatastore(grid.$config.bind);
+  }
+
+  function checkPlaceholderTask(id) {
+    return isPlaceholderTask(id, gantt, getStore());
   }
 
   var dnd = new DnD(grid.$grid_data, {
@@ -19924,6 +20072,7 @@ function _init_dnd(gantt, grid) {
     }
 
     var id = el.getAttribute(grid.$config.item_attribute);
+    if (checkPlaceholderTask(id)) return false;
     var datastore = getStore();
     var task = datastore.getItem(id);
     if (gantt.isReadonly(task)) return false;
@@ -20003,7 +20152,8 @@ function _init_dnd(gantt, grid) {
     return store.getIdByIndex(index);
   }, gantt);
   dnd.attachEvent("onDragMove", gantt.bind(function (obj, e) {
-    var maxBottom = gantt.$grid_data.getBoundingClientRect().height + (grid.$state.scrollTop || 0);
+    var gridDataSizes = gantt.$grid_data.getBoundingClientRect();
+    var maxBottom = gridDataSizes.height + gridDataSizes.y + (grid.$state.scrollTop || 0) + window.scrollY;
     var dd = dnd.config;
 
     var pos = dnd._getGridPos(e);
@@ -20049,6 +20199,11 @@ function _init_dnd(gantt, grid) {
 
         var next = store.getItem(nextId);
 
+        if (checkPlaceholderTask(nextId)) {
+          var prevId = store.getPrev(next.id);
+          next = store.getItem(prevId);
+        }
+
         if (next) {
           if (next.id != item.id) {
             over = next; //there is a valid target
@@ -20067,13 +20222,18 @@ function _init_dnd(gantt, grid) {
           nextId = store.getIdByIndex(index);
           next = store.getItem(nextId);
 
+          if (checkPlaceholderTask(nextId)) {
+            var prevId = store.getPrev(next.id);
+            next = store.getItem(prevId);
+          }
+
           if (allowedLevel(next, item) && next.id != item.id) {
             store.move(item.id, -1, store.getParent(next.id));
             return;
           }
         }
       } else if (config.order_branch_free) {
-        if (over.id != item.id && allowedLevel(over, item)) {
+        if (over.id != item.id && allowedLevel(over, item) && !checkPlaceholderTask(over.id)) {
           if (!store.hasChild(over.id)) {
             over.$open = true;
             store.move(item.id, -1, over.id);
@@ -20096,7 +20256,7 @@ function _init_dnd(gantt, grid) {
         shift++;
       }
 
-      if (item.id == over.id) return; //replacing item under cursor
+      if (item.id == over.id || checkPlaceholderTask(over.id)) return; //replacing item under cursor
 
       if (allowedLevel(over, item) && item.id != over.id) {
         store.move(item.id, 0, 0, over.id);
@@ -20150,6 +20310,8 @@ var getMultiLevelTarget = __webpack_require__(/*! ./tasks_grid_dnd_marker_helper
 
 var higlighter = __webpack_require__(/*! ./tasks_grid_dnd_marker_helpers/highlight */ "./sources/core/ui/grid/tasks_grid_dnd_marker_helpers/highlight.js");
 
+var isPlaceholderTask = __webpack_require__(/*! ../../../utils/placeholder_task */ "./sources/utils/placeholder_task.js");
+
 function _init_dnd(gantt, grid) {
   var DnD = gantt.$services.getService("dnd");
 
@@ -20159,6 +20321,14 @@ function _init_dnd(gantt, grid) {
 
   function locate(e) {
     return domHelpers.locateAttribute(e, grid.$config.item_attribute);
+  }
+
+  function getStore() {
+    return gantt.getDatastore(grid.$config.bind);
+  }
+
+  function checkPlaceholderTask(id) {
+    return isPlaceholderTask(id, gantt, getStore());
   }
 
   var dnd = new DnD(grid.$grid_data, {
@@ -20177,7 +20347,7 @@ function _init_dnd(gantt, grid) {
     var id = el.getAttribute(grid.$config.item_attribute);
     var datastore = grid.$config.rowStore;
     var task = datastore.getItem(id);
-    if (gantt.isReadonly(task)) return false;
+    if (gantt.isReadonly(task) || checkPlaceholderTask(id)) return false;
     dnd.config.initial_open_state = task.$open;
 
     if (!gantt.callEvent("onRowDragStart", [id, e.target || e.srcElement, e])) {
@@ -20213,10 +20383,15 @@ function _init_dnd(gantt, grid) {
   function getTargetTaskId(e) {
     var y = domHelpers.getRelativeEventPosition(e, grid.$grid_data).y;
     var store = grid.$config.rowStore;
+
+    if (!document.doctype) {
+      y += window.scrollY;
+    }
+
     y = y || 0; // limits for the marker according to the layout layer
 
     var scrollPos = grid.$state.scrollTop || 0;
-    var maxBottom = gantt.$grid_data.getBoundingClientRect().height + scrollPos;
+    var maxBottom = gantt.$grid_data.getBoundingClientRect().height + scrollPos + window.scrollY;
     var minTop = scrollPos;
     var firstVisibleTaskIndex = grid.getItemIndexByTopPosition(grid.$state.scrollTop);
 
@@ -20249,6 +20424,12 @@ function _init_dnd(gantt, grid) {
       return store.$getRootId();
     }
 
+    var targetId = store.getIdByIndex(index);
+
+    if (checkPlaceholderTask(targetId)) {
+      return store.getPrevSibling(targetId);
+    }
+
     return store.getIdByIndex(index);
   }
 
@@ -20259,6 +20440,10 @@ function _init_dnd(gantt, grid) {
     var config = grid.$getConfig();
     var lockLevel = !config.order_branch_free;
     var eventTop = domHelpers.getRelativeEventPosition(e, grid.$grid_data).y;
+
+    if (!document.doctype) {
+      eventTop += window.scrollY;
+    }
 
     if (targetTaskId !== store.$getRootId()) {
       var rowTop = grid.getItemTop(targetTaskId);
@@ -20272,6 +20457,11 @@ function _init_dnd(gantt, grid) {
       result = getMultiLevelTarget(dnd.config.id, targetTaskId, relTargetPos, eventTop, store);
     } else {
       result = getLockedLevelTarget(dnd.config.id, targetTaskId, relTargetPos, eventTop, store, dnd.config.level);
+
+      if (result && result.targetParent && checkPlaceholderTask(result.targetParent)) {
+        targetTaskId = store.getPrevSibling(result.targetParent);
+        result = getLockedLevelTarget(dnd.config.id, targetTaskId, relTargetPos, eventTop, store, dnd.config.level);
+      }
     }
 
     return result;
@@ -20408,7 +20598,6 @@ function highlightPosition(target, root, grid) {
   var markerPos = getTaskMarkerPosition(target, grid); // setting position of row
 
   root.marker.style.left = markerPos.x + 9 + "px";
-  root.marker.style.top = markerPos.y + "px";
   var markerLine = root.markerLine;
 
   if (!markerLine) {
@@ -20440,7 +20629,7 @@ function removeLineHighlight(root) {
 
 function highlightRow(target, markerLine, grid) {
   var linePos = getLineMarkerPosition(target, grid);
-  var maxBottom = grid.$grid_data.getBoundingClientRect().bottom;
+  var maxBottom = grid.$grid_data.getBoundingClientRect().bottom + window.scrollY;
   markerLine.innerHTML = "<div class='gantt_grid_dnd_marker_line'></div>";
   markerLine.style.left = linePos.x + "px";
   markerLine.style.height = "4px";
@@ -20461,7 +20650,7 @@ function highlightFolder(target, markerFolder, grid) {
     x: 0,
     y: grid.getItemTop(id)
   }, grid);
-  var maxBottom = grid.$grid_data.getBoundingClientRect().bottom;
+  var maxBottom = grid.$grid_data.getBoundingClientRect().bottom + window.scrollY;
   markerFolder.innerHTML = "<div class='gantt_grid_dnd_marker_folder'></div>";
   markerFolder.style.width = grid.$grid_data.offsetWidth + "px";
   markerFolder.style.top = pos.y + "px";
@@ -21898,7 +22087,7 @@ var Layout = function (_super) {
     var oldVisibleCells = this._visibleCells || {};
     var firstCall = !this._visibleCells;
     var visibleCells = {};
-    var cell;
+    var cell = null;
     var parentVisibility = [];
 
     for (var i = 0; i < this._sizes.length; i++) {
@@ -24013,7 +24202,7 @@ module.exports = function (gantt) {
       }
 
       data = _getDisplayValues(sns, value, entry);
-      htmlResourceRow += ["<label class='gantt_resource_row' data-item-id='" + entry.key + "' data-checked=" + (data.value ? 'true' : 'false') + ">", "<input class='gantt_resource_toggle' type='checkbox'", data.value ? " checked='checked'" : "", "><div class='gantt_resource_cell gantt_resource_cell_checkbox'><span class='matherial_checkbox_icon'></span></div>", "<div class='gantt_resource_cell gantt_resource_cell_label'>", entry.label, "</div>", "<div class='gantt_resource_cell gantt_resource_cell_value'>", _getAmountInput(entry, data.value, !data.value), "</div>", "<div class='gantt_resource_cell gantt_resource_cell_unit'>", entry.unit, "</div>", "</label>"].join("");
+      htmlResourceRow += ["<label class='gantt_resource_row' data-item-id='" + entry.key + "' data-checked=" + (data.value ? 'true' : 'false') + ">", "<input class='gantt_resource_toggle' type='checkbox'", data.value ? " checked='checked'" : "", "><div class='gantt_resource_cell gantt_resource_cell_checkbox'><span class='matherial_checkbox_icon'></span></div>", "<div class='gantt_resource_cell gantt_resource_cell_label'>", entry.label, "</div>", "<div class='gantt_resource_cell gantt_resource_cell_value'>", _getAmountInput(entry, data.value, !data.value, data.id), "</div>", "<div class='gantt_resource_cell gantt_resource_cell_unit'>", entry.unit, "</div>", "</label>"].join("");
     });
     resourcesElement.innerHTML = htmlResourceRow; // weird element sizes in ie11 when display empty resource list, use zoom to force repaint
 
@@ -24051,6 +24240,7 @@ module.exports = function (gantt) {
     }
 
     for (var i = 0; i < itemsAdd.length; i++) {
+      var originalId = itemsAdd[i].getAttribute("data-assignment-id");
       var resourceId = itemsAdd[i].getAttribute("data-item-id");
       var amount = itemsAdd[i].value.trim();
 
@@ -24058,7 +24248,8 @@ module.exports = function (gantt) {
         delete settedValuesHash[resourceId];
         result[result.length] = {
           resource_id: resourceId,
-          value: amount
+          value: amount,
+          id: originalId
         };
       }
     }
@@ -24067,7 +24258,8 @@ module.exports = function (gantt) {
       for (var item in settedValuesHash) {
         result[result.length] = {
           resource_id: item,
-          value: settedValuesHash[item]
+          value: settedValuesHash[item].value,
+          id: settedValuesHash[item].id
         };
       }
     }
@@ -24079,7 +24271,7 @@ module.exports = function (gantt) {
     gantt._focus(node.querySelector(".gantt_resources"));
   };
 
-  function _getAmountInput(item, value, disabled) {
+  function _getAmountInput(item, value, disabled, assignmentId) {
     var _attributes;
 
     var innerHTML = "";
@@ -24087,6 +24279,9 @@ module.exports = function (gantt) {
     _attributes = [{
       key: "data-item-id",
       value: item.key
+    }, {
+      key: "data-assignment-id",
+      value: assignmentId || ""
     }, {
       key: "class",
       value: "gantt_resource_amount_input"
@@ -24207,9 +24402,13 @@ module.exports = function (gantt) {
 
       for (var i = 0; i < inputs.length; i++) {
         var key = inputs[i].getAttribute("data-item-id");
+        var originalAssignmentId = inputs[i].getAttribute("data-assignment-id");
 
         if (!inputs[i].disabled) {
-          localCache.resourcesValues[sns.id][key] = inputs[i].value;
+          localCache.resourcesValues[sns.id][key] = {
+            value: inputs[i].value,
+            id: originalAssignmentId
+          };
         } else {
           delete localCache.resourcesValues[sns.id][key];
         }
@@ -24232,14 +24431,14 @@ module.exports = function (gantt) {
     localCache.eventsInitialized[sns.id] = true;
   }
 
-  function _getSnsToHideUnsetted(sns, ev, query, hideUnsetted) {
+  function _getSnsToHideUnsetted(controlConfig, task, query, hideUnsetted) {
     var comparison;
-    var resultSns;
+    var resultConfig;
 
     if (!hideUnsetted) {
       if (query === "") {
         // show all
-        return sns;
+        return controlConfig;
       }
 
       comparison = function comparison(entry) {
@@ -24249,7 +24448,7 @@ module.exports = function (gantt) {
         }
       };
     } else {
-      var collection = ev[sns.map_to] || [];
+      var collection = task[controlConfig.map_to] || [];
 
       if (!helpers.isArray(collection)) {
         collection = [collection];
@@ -24261,24 +24460,29 @@ module.exports = function (gantt) {
       if (collection.length === 0) {
         //nothing setted
         collection = [];
-        resultSns = gantt.copy(sns);
-        resultSns.options = [];
+        resultConfig = gantt.copy(controlConfig);
+        resultConfig.options = [];
 
-        for (var key in localCache.resourcesValues[sns.id]) {
-          if (localCache.resourcesValues[sns.id][key] !== "") {
+        for (var key in localCache.resourcesValues[controlConfig.id]) {
+          var cachedValue = localCache.resourcesValues[controlConfig.id][key];
+
+          if (cachedValue.value !== "") {
             collection.push({
               resource_id: key,
-              value: localCache.resourcesValues[sns.id][key]
+              value: cachedValue.value,
+              id: cachedValue.id
             });
           }
         }
 
         if (collection.length === 0) {
-          return resultSns;
+          return resultConfig;
         }
       } else {
-        for (var key in localCache.resourcesValues[sns.id]) {
-          if (localCache.resourcesValues[sns.id][key] !== "") {
+        for (var key in localCache.resourcesValues[controlConfig.id]) {
+          var cachedValue = localCache.resourcesValues[controlConfig.id][key];
+
+          if (cachedValue.value !== "") {
             var searchResult = helpers.arrayFind(collection, function (entry) {
               return entry.id == key;
             });
@@ -24286,7 +24490,8 @@ module.exports = function (gantt) {
             if (!searchResult) {
               collection.push({
                 resource_id: key,
-                value: localCache.resourcesValues[sns.id][key]
+                value: cachedValue.value,
+                id: cachedValue.id
               });
             }
           }
@@ -24307,9 +24512,9 @@ module.exports = function (gantt) {
       };
     }
 
-    resultSns = gantt.copy(sns);
-    resultSns.options = helpers.arrayFilter(resultSns.options, comparison);
-    return resultSns;
+    resultConfig = gantt.copy(controlConfig);
+    resultConfig.options = helpers.arrayFilter(resultConfig.options, comparison);
+    return resultConfig;
   }
 
   function _getInputElementSelector(isChecked) {
@@ -24378,11 +24583,13 @@ module.exports = function (gantt) {
 
       if (searchResult) {
         data.value = searchResult.value;
+        data.id = searchResult.id;
       }
     }
 
     if (localCache.resourcesValues[sns.id] && localCache.resourcesValues[sns.id][option.key]) {
-      data.value = localCache.resourcesValues[sns.id][option.key];
+      data.value = localCache.resourcesValues[sns.id][option.key].value;
+      data.id = localCache.resourcesValues[sns.id][option.key].id;
     }
 
     return data;
@@ -25027,7 +25234,7 @@ module.exports = function (gantt) {
 
     this.event(gantt.getLightbox(), "click", function (e) {
       e = e || window.event;
-      var src = e.target ? e.target : e.srcElement;
+      var src = domHelpers.getTargetNode(e);
       var className = domHelpers.getClassName(src);
 
       if (!className) {
@@ -25316,8 +25523,9 @@ module.exports = function (gantt) {
   };
 
   gantt._init_dnd_events = function () {
-    this.event(document.body, "mousemove", gantt._move_while_dnd);
-    this.event(document.body, "mouseup", gantt._finish_dnd);
+    var eventElement = document.body;
+    this.event(eventElement, "mousemove", gantt._move_while_dnd);
+    this.event(eventElement, "mouseup", gantt._finish_dnd);
 
     gantt._init_dnd_events = function () {};
   };
@@ -25615,7 +25823,7 @@ module.exports = function (gantt) {
         range = range || 10;
         offset = offset || Math.floor(range / 2);
         start_year = start_year || settings.date.getFullYear() - offset;
-        end_year = end_year || start_year + range;
+        end_year = end_year || gantt.getState().max_date.getFullYear() + offset;
 
         for (i = start_year; i < end_year; i++) {
           html += "<option value='" + i + "'>" + i + "</option>";
@@ -25830,9 +26038,9 @@ var initializer = function () {
             if (grid_limits[1] && gantt.config.grid_width > grid_limits[1]) gantt.config.grid_width = grid_limits[1];
 
             if (mainTimeline && gantt.config.show_chart) {
-              mainGrid.$config.width = gantt.config.grid_width - 1; // GS-1314: Don't let the non-scrollable grid to be larger than the container
+              mainGrid.$config.width = gantt.config.grid_width - 1; // GS-1314: Don't let the non-scrollable grid to be larger than the container with the correct width
 
-              if (!mainGrid.$config.scrollable && mainGrid.$config.scrollY) {
+              if (!mainGrid.$config.scrollable && mainGrid.$config.scrollY && gantt.$root.offsetWidth) {
                 var ganttContainerWidth = mainGrid.$gantt.$layout.$container.offsetWidth;
                 var verticalScrollbar = gantt.$ui.getView(mainGrid.$config.scrollY);
                 var verticalScrollbarWidth = verticalScrollbar.$config.width;
@@ -26085,7 +26293,8 @@ module.exports = function (gantt) {
     }
   }
 
-  gantt.event(document, "keydown", modal_key, true);
+  var eventElement = domHelpers.getRootNode(gantt.$root) || document;
+  gantt.event(eventElement, "keydown", modal_key, true);
 
   function modality(mode) {
     if (!modality.cover) {
@@ -26534,7 +26743,7 @@ var createMouseHandler = function (domHelpers) {
         if (!default_action) return;
 
         if (id !== null && gantt.getTask(id)) {
-          if (res && gantt.config.details_on_dblclick && !gantt.isReadonly()) {
+          if (res && gantt.config.details_on_dblclick && !gantt.isReadonly(id)) {
             gantt.showLightbox(id);
           }
         }
@@ -26832,12 +27041,13 @@ module.exports = function (gantt) {
 
   gantt.attachEvent("onGanttReady", function () {
     if (!isHeadless(gantt)) {
-      gantt.eventRemove(document.body, "mousemove", autoscrollInterval);
-      gantt.event(document.body, "mousemove", autoscrollInterval);
-      gantt.eventRemove(document.body, "touchmove", autoscrollInterval);
-      gantt.event(document.body, "touchmove", autoscrollInterval);
-      gantt.eventRemove(document.body, "pointermove", autoscrollInterval);
-      gantt.event(document.body, "pointermove", autoscrollInterval);
+      var eventElement = domHelpers.getRootNode(gantt.$root) || document.body;
+      gantt.eventRemove(eventElement, "mousemove", autoscrollInterval);
+      gantt.event(eventElement, "mousemove", autoscrollInterval);
+      gantt.eventRemove(eventElement, "touchmove", autoscrollInterval);
+      gantt.event(eventElement, "touchmove", autoscrollInterval);
+      gantt.eventRemove(eventElement, "pointermove", autoscrollInterval);
+      gantt.event(eventElement, "pointermove", autoscrollInterval);
     }
   });
   gantt.attachEvent("onDestroy", function () {
@@ -27317,7 +27527,6 @@ module.exports = null;
 Object.defineProperty(exports, "__esModule", { value: true });
 var env = __webpack_require__(/*! ../../../utils/env */ "./sources/utils/env.js");
 var eventable = __webpack_require__(/*! ../../../utils/eventable */ "./sources/utils/eventable.js");
-var isHeadless = __webpack_require__(/*! ../../../utils/is_headless */ "./sources/utils/is_headless.js");
 var USE_KEY = ["ctrlKey", "altKey", "shiftKey", "metaKey"];
 var _defaultScales = [
     [
@@ -27415,6 +27624,10 @@ var TimelineZoom = /** @class */ (function () {
             return zoomLevel;
         };
         this._getVisibleDate = function () {
+            // GS-1450. Don't try to get the visible date if there is no timeline
+            if (!_this.$gantt.$task) {
+                return null;
+            }
             var scrollPos = _this.$gantt.getScrollState().x;
             var viewPort = _this.$gantt.$task.offsetWidth;
             _this._visibleDate = _this.$gantt.dateFromPos(scrollPos + viewPort / 2);
@@ -27426,7 +27639,7 @@ var TimelineZoom = /** @class */ (function () {
             var chartConfig = gantt.copy(nextConfig);
             delete chartConfig.name;
             gantt.mixin(gantt.config, chartConfig, true);
-            var isRendered = !!gantt.$root;
+            var isRendered = !!gantt.$root && !!gantt.$task;
             if (isRendered) {
                 if (cursorOffset) {
                     var cursorDate = _this.$gantt.dateFromPos(cursorOffset + _this.$gantt.getScrollState().x);
@@ -27497,7 +27710,9 @@ var TimelineZoom = /** @class */ (function () {
     }
     TimelineZoom.prototype.init = function (config) {
         var _this = this;
-        if (!isHeadless(this.$gantt)) {
+        // GS-1354 and GS-1318. If we check the headless mode using the function,
+        // it will return false when Gantt is not initialized, but we may want to do it later
+        if (this.$gantt.env.isNode) {
             return;
         }
         this._initialStartDate = config.startDate;
@@ -30272,7 +30487,9 @@ function listenWindowResize(gantt, window) {
   function repaintGantt() {
     clearTimeout(resizeDelay);
     resizeDelay = setTimeout(function () {
-      gantt.render();
+      if (!gantt.$destroyed) {
+        gantt.render();
+      }
     }, resizeTimeout);
   }
 
@@ -31108,7 +31325,8 @@ var initLinksDND = function initLinksDND(timeline, gantt) {
     var targ = gantt.locate(e),
         to_start = true; // can drag and drop link to another gantt on the page, such links are not supported
 
-    var sameGantt = domHelpers.isChildOf(e.target || e.srcElement, gantt.$root);
+    var eventTarget = domHelpers.getTargetNode(e);
+    var sameGantt = domHelpers.isChildOf(eventTarget, gantt.$root);
 
     if (!sameGantt) {
       landing = false;
@@ -32459,11 +32677,17 @@ function createTaskDND(timeline, gantt) {
 
       return correctShift;
     },
-    _move: function _move(task, shift, drag) {
+    _move: function _move(task, shift, drag, multipleDragShift) {
       var coords_x = this._drag_task_coords(task, drag);
 
-      var new_start = gantt.dateFromPos(coords_x.start + shift),
-          new_end = gantt.dateFromPos(coords_x.end + shift);
+      var new_start = null,
+          new_end = null; // GS-454: If we drag multiple tasks, rely on the dates instead of timeline coordinates
+
+      if (multipleDragShift) {
+        new_start = new Date(+drag.obj.start_date + multipleDragShift), new_end = new Date(+drag.obj.end_date + multipleDragShift);
+      } else {
+        new_start = gantt.dateFromPos(coords_x.start + shift), new_end = gantt.dateFromPos(coords_x.end + shift);
+      }
 
       if (!new_start) {
         task.start_date = new Date(gantt.getState().min_date);
@@ -32515,12 +32739,12 @@ function createTaskDND(timeline, gantt) {
         this._update_on_move(e);
       }
     },
-    _update_item_on_move: function _update_item_on_move(shift, id, mode, drag, e) {
+    _update_item_on_move: function _update_item_on_move(shift, id, mode, drag, e, multipleDragShift) {
       var task = gantt.getTask(id);
       var original = gantt.mixin({}, task);
       var copy = gantt.mixin({}, task);
 
-      this._handlers[mode].apply(this, [copy, shift, drag]);
+      this._handlers[mode].apply(this, [copy, shift, drag, multipleDragShift]);
 
       gantt.mixin(task, copy, true); //gantt._update_parents(drag.id, true);
 
@@ -32575,9 +32799,15 @@ function createTaskDND(timeline, gantt) {
 
               if (dragProject && childDrag.id != drag.id) {
                 gantt._bulk_dnd = true;
+              } // GS-454: Calculate the date shift in milliseconds instead of pixels
+
+
+              if (maxShift === undefined && (dragProject || Object.keys(dragHash).length > 1)) {
+                var shiftDate = gantt.dateFromPos(drag.start_x);
+                var multipleDragShift = curr_date - shiftDate;
               }
 
-              this._update_item_on_move(shift, childDrag.id, childDrag.mode, childDrag, e);
+              this._update_item_on_move(shift, childDrag.id, childDrag.mode, childDrag, e, multipleDragShift);
             }
 
             gantt._bulk_dnd = false;
@@ -34337,6 +34567,34 @@ function getFocusableNodes(root) {
   var nodesArray = Array.prototype.slice.call(nodes, 0);
 
   for (var i = 0; i < nodesArray.length; i++) {
+    nodesArray[i].$position = i; // we remember original nodes order, 
+    // so when we sort them by tabindex we ensure order of nodes with same tabindex is preserved, 
+    // since some browsers do unstable sort
+  } // use tabindex to sort focusable nodes
+
+
+  nodesArray.sort(function (a, b) {
+    if (a.tabIndex === 0 && b.tabIndex !== 0) {
+      return 1;
+    }
+
+    if (a.tabIndex !== 0 && b.tabIndex === 0) {
+      return -1;
+    }
+
+    if (a.tabIndex === b.tabIndex) {
+      // ensure we do stable sort
+      return a.$position - b.$position;
+    }
+
+    if (a.tabIndex < b.tabIndex) {
+      return -1;
+    }
+
+    return 1;
+  });
+
+  for (var i = 0; i < nodesArray.length; i++) {
     var node = nodesArray[i];
     var isValid = (hasNonNegativeTabIndex(node) || isEnabled(node) || hasHref(node)) && isVisible(node);
 
@@ -34438,6 +34696,10 @@ function getTargetNode(e) {
   if (e.tagName) trg = e;else {
     e = e || window.event;
     trg = e.target || e.srcElement;
+
+    if (trg.shadowRoot && e.composedPath) {
+      trg = e.composedPath()[0];
+    }
   }
   return trg;
 }
@@ -34539,6 +34801,58 @@ function closest(element, selector) {
   }
 }
 
+function isShadowDomSupported() {
+  return document.head.createShadowRoot || document.head.attachShadow;
+}
+/**
+ * Returns element that has the browser focus, or null if no element has focus.
+ * Works with shadow DOM, so it's prefereed to use this function instead of document.activeElement directly.
+ * @returns HTMLElement
+ */
+
+
+function getActiveElement() {
+  var activeElement = document.activeElement;
+
+  if (activeElement.shadowRoot) {
+    activeElement = activeElement.shadowRoot.activeElement;
+  }
+
+  if (activeElement === document.body && document.getSelection) {
+    activeElement = document.getSelection().focusNode || document.body;
+  }
+
+  return activeElement;
+}
+/**
+ * Returns document.body or the host node of the ShadowRoot, if the element is attached to ShadowDom
+ * @param {HTMLElement} element 
+ * @returns HTMLElement
+ */
+
+
+function getRootNode(element) {
+  if (!element) {
+    return document.body;
+  }
+
+  if (!isShadowDomSupported()) {
+    return document.body;
+  }
+
+  while (element.parentNode && (element = element.parentNode)) {
+    if (element instanceof ShadowRoot) {
+      return element.host;
+    }
+  }
+
+  return document.body;
+}
+
+function hasShadowParent(element) {
+  return !!getRootNode(element);
+}
+
 module.exports = {
   getNodePosition: elementPosition,
   getFocusableNodes: getFocusableNodes,
@@ -34556,7 +34870,11 @@ module.exports = {
   getRelativeEventPosition: getRelativeEventPosition,
   isChildOf: isChildOf,
   hasClass: hasClass,
-  closest: closest
+  closest: closest,
+  getRootNode: getRootNode,
+  hasShadowParent: hasShadowParent,
+  isShadowDomSupported: isShadowDomSupported,
+  getActiveElement: getActiveElement
 };
 
 /***/ }),
@@ -34917,13 +35235,7 @@ module.exports = function (gantt) {
 
     gantt.utils = {
       arrayFind: codeHelpers.arrayFind,
-      dom: {
-        getNodePosition: domHelpers.getNodePosition,
-        getRelativeEventPosition: domHelpers.getRelativeEventPosition,
-        isChildOf: domHelpers.isChildOf,
-        hasClass: domHelpers.hasClass,
-        closest: domHelpers.closest
-      }
+      dom: domHelpers
     };
 
     var domEvents = __webpack_require__(/*! ./ui/utils/dom_event_scope */ "./sources/core/ui/utils/dom_event_scope.js")();
@@ -35011,8 +35323,11 @@ module.exports = function (gantt) {
       gantt.attachEvent("onGanttRender", function () {
         if (gantt.config.initial_scroll) {
           var firstTask = gantt.getTaskByIndex(0);
-          var id = firstTask ? firstTask.id : gantt.config.root_id;
-          if (gantt.isTaskExists(id)) gantt.showTask(id);
+          var id = firstTask ? firstTask.id : gantt.config.root_id; // GS-1450. Don't scroll to the task if there is no timeline
+
+          if (gantt.isTaskExists(id) && gantt.$task && gantt.utils.dom.isChildOf(gantt.$task, gantt.$container)) {
+            gantt.showTask(id);
+          }
         }
       }, {
         once: true
@@ -35183,7 +35498,7 @@ var calendarArgumentsHelper = function calendarArgumentsHelper(gantt) {
       } else {
         config = new argumentType(param.start_date, param.end_date, param.task);
 
-        if (param.id) {
+        if (param.id !== null && param.id !== undefined) {
           config.task = param;
         }
       }
@@ -35222,7 +35537,7 @@ var calendarArgumentsHelper = function calendarArgumentsHelper(gantt) {
         config.calendar);
       }
 
-      if (config.id) {
+      if (config.id !== null && config.id !== undefined) {
         processedConfig.task = config; // received a task object as an argument
         // ignore 'unit' and 'step' properties in this case, since it's likely a part of data model of a task
 
@@ -35504,19 +35819,31 @@ CalendarManager.prototype = {
 
     var calendar = this._getOwnCalendar(taskObject);
 
-    if (!calendar && gantt.config.inherit_calendar && gantt.isTaskExists(taskObject.parent)) {
-      var stop = false;
-      gantt.eachParent(function (parent) {
-        if (stop) return;
+    var groupMode = !!gantt.getState().group_mode;
 
-        if (gantt.isSummaryTask(parent)) {
-          calendar = this._getOwnCalendar(parent);
+    if (!calendar && gantt.config.inherit_calendar && gantt.isTaskExists(taskObject.parent)) {
+      // GS-1579  group mode overrides tree hierarchy, iterate using `.parent` property, instead of using eachParent iterator
+      var currentTask = taskObject;
+
+      while (gantt.isTaskExists(currentTask.parent)) {
+        currentTask = gantt.getTask(currentTask.parent);
+
+        if (gantt.isSummaryTask(currentTask)) {
+          calendar = this._getOwnCalendar(currentTask);
 
           if (calendar) {
-            stop = true;
+            break;
           }
         }
-      }, taskObject.id, this);
+      }
+
+      if (groupMode && !calendar) {
+        // if group mode and inherit_calendars is enabled - preserve previously applied parent calendar
+        // we may need it when groupBy parses grouped data, old parent may be not loaded yet
+        if (task.$effective_calendar) {
+          calendar = this.getCalendar(task.$effective_calendar);
+        }
+      }
     }
 
     return calendar || this.getCalendar();
@@ -36375,8 +36702,10 @@ CalendarWorkTimeStrategy.prototype = {
         if (timestamp !== null) {
           delete this.getConfig().dates[timestamp];
         }
-      } // Clear work units cache
+      } // Load updated settings and clear work units cache
 
+
+      this._parseSettings();
 
       this._clearCaches();
     }, this));
@@ -38047,18 +38376,35 @@ module.exports = function (gantt) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var dhtmlxgantt_web_1 = __webpack_require__(/*! ./dhtmlxgantt.web */ "./sources/dhtmlxgantt.web.ts");
+exports.gantt = dhtmlxgantt_web_1.gantt;
+exports.Gantt = dhtmlxgantt_web_1.Gantt;
+var scope = __webpack_require__(/*! ./utils/global */ "./sources/utils/global.js");
+scope.gantt = dhtmlxgantt_web_1.gantt;
+scope.Gantt = dhtmlxgantt_web_1.Gantt;
+exports.default = dhtmlxgantt_web_1.gantt;
+
+
+/***/ }),
+
+/***/ "./sources/dhtmlxgantt.web.ts":
+/*!************************************!*\
+  !*** ./sources/dhtmlxgantt.web.ts ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 var extensions_all_1 = __webpack_require__(/*! ./ext/extensions_all */ "./sources/ext/extensions_all.ts");
 var gantt_factory_1 = __webpack_require__(/*! ./factory/gantt_factory */ "./sources/factory/gantt_factory.ts");
 var factoryMethod = __webpack_require__(/*! ./factory/make_instance_web */ "./sources/factory/make_instance_web.js");
-var scope = __webpack_require__(/*! ./utils/global */ "./sources/utils/global.js");
 // tslint:disable-next-line variable-name
 var Gantt = new gantt_factory_1.default(factoryMethod, extensions_all_1.default);
 exports.Gantt = Gantt;
-var w = scope;
-w.Gantt = Gantt;
-var gantt = w.gantt = Gantt.getGanttInstance();
+var gantt = Gantt.getGanttInstance();
 exports.gantt = gantt;
-exports.default = gantt;
 
 
 /***/ }),
@@ -38273,10 +38619,20 @@ var AlapStrategy = /** @class */ (function () {
             if (this._comparator.isGreaterOrDefault(this._gantt.config.project_end, task.end_date, task)) {
                 maxEnd = this._gantt.config.project_end;
             }
+            // GS-1152. don't process tasks with cancelled auto-scheduling
+            if (this._gantt.callEvent("onBeforeTaskAutoSchedule", [task, task.end_date]) === false) {
+                maxEnd = task.end_date;
+            }
         }
         if (maxEnd) {
-            maxEnd = this._gantt.getClosestWorkTime({ date: maxEnd, dir: "future", task: task });
-            maxStart = this._gantt.calculateEndDate({ start_date: maxEnd, duration: -task.duration, task: task });
+            // GS-1556. Tasks with zero duration shouldn't violate the project_end date
+            if (task.duration) {
+                maxEnd = this._gantt.getClosestWorkTime({ date: maxEnd, dir: "future", task: task });
+                maxStart = this._gantt.calculateEndDate({ start_date: maxEnd, duration: -task.duration, task: task });
+            }
+            else {
+                maxStart = maxEnd = this._gantt.getClosestWorkTime({ date: maxEnd, dir: "past", task: task });
+            }
         }
         var currentPlan = task_plan_1.TaskPlan.Create(masterPlan);
         currentPlan.link = linkId;
@@ -38371,19 +38727,28 @@ var AsapStrategy = /** @class */ (function () {
                 (this._gantt.config.auto_scheduling_strict && this._comparator.isGreaterOrDefault(task.start_date, this._gantt.config.project_start, task))) {
                 minStart = this._gantt.config.project_start;
             }
+            // GS-1152. don't process tasks with cancelled auto-scheduling
+            if (this._gantt.callEvent("onBeforeTaskAutoSchedule", [task, task.start_date]) === false) {
+                minStart = task.start_date;
+            }
         }
         var maxEnd = null;
         if (minStart) {
-            minStart = this._gantt.getClosestWorkTime({
-                date: minStart,
-                dir: "future",
-                task: task
-            });
-            maxEnd = this._gantt.calculateEndDate({
-                start_date: minStart,
-                duration: task.duration,
-                task: task
-            });
+            if (task.duration) {
+                minStart = this._gantt.getClosestWorkTime({
+                    date: minStart,
+                    dir: "future",
+                    task: task
+                });
+                maxEnd = this._gantt.calculateEndDate({
+                    start_date: minStart,
+                    duration: task.duration,
+                    task: task
+                });
+            }
+            else {
+                minStart = maxEnd = this._gantt.getClosestWorkTime({ date: minStart, dir: "past", task: task });
+            }
         }
         var masterPlan = plansHash[taskId];
         var currentPlan = task_plan_1.TaskPlan.Create(masterPlan);
@@ -38455,11 +38820,21 @@ var AsapStrategy = /** @class */ (function () {
             });
         }
         else {
-            successorStart = this._gantt.getClosestWorkTime({
-                date: predecessorEnd,
-                dir: "future",
-                task: successor
-            });
+            var ffLink = this._gantt.getLink(relation.id).type === this._gantt.config.links.finish_to_finish;
+            if (!successor.duration && ffLink) {
+                successorStart = this._gantt.getClosestWorkTime({
+                    date: predecessorEnd,
+                    dir: "past",
+                    task: successor
+                });
+            }
+            else {
+                successorStart = this._gantt.getClosestWorkTime({
+                    date: predecessorEnd,
+                    dir: "future",
+                    task: successor
+                });
+            }
         }
         return successorStart;
     };
@@ -38672,6 +39047,10 @@ var ConstraintsHelper = /** @class */ (function () {
             return !_this.isAsapTask(task);
         };
         this.getConstraintType = function (task) {
+            // GS-1487. Don't add a constraint if auto-scheduling is cancelled
+            if (task.auto_scheduling === false) {
+                return;
+            }
             // in case of backward scheduling, tasks without explicit constraints are considered ALAP tasks
             if (task.constraint_type) {
                 return task.constraint_type;
@@ -38999,6 +39378,9 @@ var AutoSchedulingPlanner = /** @class */ (function () {
         for (var i = 0; i < mainSequence.length; i++) {
             var currentId = mainSequence[i];
             var task = gantt.getTask(currentId);
+            if (task.auto_scheduling === false) {
+                continue;
+            }
             var plan = mainSequenceStrategy.resolveRelationDate(currentId, relationsMap[currentId], plansHash);
             this.limitPlanDates(task, plan);
             if (isMainSequence(task)) {
@@ -39011,6 +39393,9 @@ var AutoSchedulingPlanner = /** @class */ (function () {
         for (var i = 0; i < secondarySequence.length; i++) {
             var currentId = secondarySequence[i];
             var task = gantt.getTask(currentId);
+            if (task.auto_scheduling === false) {
+                continue;
+            }
             if (!isMainSequence(task)) {
                 var plan = secondarySequenceStrategy.resolveRelationDate(currentId, relationsMap[currentId], plansHash);
                 this.limitPlanDates(task, plan);
@@ -39367,7 +39752,24 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
                 }
             }
         }
+        // GS-686. We shouldn't change the constraint after changing only the duration or end_date
+        function shouldKeepConstraints(task, oldTask) {
+            if (gantt.config.schedule_from_end) {
+                if (task.end_date.valueOf() === oldTask.end_date.valueOf()) {
+                    return true;
+                }
+            }
+            else {
+                if (task.start_date.valueOf() === oldTask.start_date.valueOf()) {
+                    return true;
+                }
+            }
+        }
         function updateTaskConstraints(task) {
+            // GS-1487. Don't add a constraint if auto-scheduling is cancelled
+            if (task.auto_scheduling === false) {
+                return;
+            }
             if (gantt.config.schedule_from_end) {
                 task.constraint_type = gantt.config.constraint_types.FNLT;
                 task.constraint_date = new Date(task.end_date);
@@ -39391,7 +39793,12 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
             if (gantt.config.auto_scheduling && !gantt._autoscheduling_in_progress) {
                 var newTask = gantt.getTask(taskId);
                 if (_notEqualTaskDates(task, newTask)) {
-                    updateTaskConstraints(newTask);
+                    if (shouldKeepConstraints(newTask, task)) {
+                        // don't change constraints
+                    }
+                    else {
+                        updateTaskConstraints(newTask);
+                    }
                     if (gantt.config.auto_scheduling_move_projects &&
                         // tslint:disable-next-line triple-equals
                         movedTask == taskId) {
@@ -39429,6 +39836,17 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
                     if (state.columnName === "constraint_type") {
                         changedConstraint = true;
                     }
+                    // GS-686. We shouldn't change the constraint after changing only the duration or end_date
+                    var durationColumn = state.columnName === "duration";
+                    var startDateColumn = gantt.config.schedule_from_end && (state.columnName === "start_date");
+                    var endDateColumn = !gantt.config.schedule_from_end && (state.columnName === "end_date");
+                    var linkedDateModification = gantt.config.inline_editors_date_processing !== "keepDuration";
+                    var linkedColumnEdit = linkedDateModification && (startDateColumn || endDateColumn);
+                    var keepConstraints = durationColumn || linkedColumnEdit;
+                    if (keepConstraints) {
+                        var task = gantt.getTask(state.id);
+                        task.$keep_constraints = true;
+                    }
                 }
                 return true;
             });
@@ -39440,6 +39858,9 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
                 var oldTask = gantt.getTask(taskId);
                 if (_notEqualTaskDates(task, oldTask)) {
                     modifiedTaskId = taskId;
+                    if (shouldKeepConstraints(task, oldTask)) {
+                        task.$keep_constraints = true;
+                    }
                     if (gantt.getConstraintType(task) !== gantt.getConstraintType(oldTask) ||
                         +task.constraint_date !== +oldTask.constraint_date) {
                         changedConstraint = true;
@@ -39450,11 +39871,14 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
         }
         function onAfterTaskUpdateHandler(taskId, task) {
             if (gantt.config.auto_scheduling && !gantt._autoscheduling_in_progress) {
-                if (modifiedTaskId &&
+                if (modifiedTaskId !== null &&
                     // tslint:disable-next-line triple-equals
                     modifiedTaskId == taskId) {
                     modifiedTaskId = null;
-                    if (!changedConstraint) {
+                    if (task.$keep_constraints) {
+                        delete task.$keep_constraints;
+                    }
+                    else if (!changedConstraint) {
                         updateTaskConstraints(task);
                     }
                     gantt.autoSchedule(task.id);
@@ -39503,6 +39927,7 @@ exports.attachUIHandlers = attachUIHandlers;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var domHelpers = __webpack_require__(/*! ../../core/ui/utils/dom_helpers */ "./sources/core/ui/utils/dom_helpers.js");
 var EventsManager = /** @class */ (function () {
     function EventsManager(gantt) {
         this._mouseDown = false;
@@ -39550,7 +39975,8 @@ var EventsManager = /** @class */ (function () {
             }
             scheduledDndCoordinates = _this._getCoordinates(event, selectedRegion);
         });
-        this._domEvents.attach(document.body, "mouseup", function (event) {
+        var eventElement = domHelpers.getRootNode(gantt.$root) || document.body;
+        this._domEvents.attach(eventElement, "mouseup", function (event) {
             scheduledDndCoordinates = null;
             if (useKey && event[useKey] !== true) {
                 return;
@@ -39932,16 +40358,22 @@ module.exports = function (gantt) {
 
     for (var i = 0; i < task2.$target.length; i++) {
       if (common[task2.$target[i]]) relations.push(task2.$target[i]);
-    }
+    } // there is at least one link
 
-    for (var i = 0; i < relations.length; i++) {
-      var link = this.getLink(relations[i]);
 
-      var newSlack = this._getSlack(task1, task2, this._convertToFinishToStartLink(link.id, link, task1, task2, task1.parent, task2.parent));
+    if (relations[0]) {
+      for (var i = 0; i < relations.length; i++) {
+        var link = this.getLink(relations[i]);
 
-      if (minSlack > newSlack || i === 0) {
-        minSlack = newSlack;
+        var newSlack = this._getSlack(task1, task2, this._convertToFinishToStartLink(link.id, link, task1, task2, task1.parent, task2.parent));
+
+        if (minSlack > newSlack || i === 0) {
+          minSlack = newSlack;
+        }
       }
+    } else {
+      // there are no links, but we still need the slack (for the children of a project task)
+      minSlack = this._getSlack(task1, task2, {});
     }
 
     return minSlack;
@@ -40165,85 +40597,159 @@ module.exports = function (gantt) {
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
 module.exports = function (gantt) {
   var linksBuilder = __webpack_require__(/*! ../../core/relations/links_builder */ "./sources/core/relations/links_builder.js")(gantt);
-
-  var helpers = __webpack_require__(/*! ../../utils/helpers */ "./sources/utils/helpers.js");
 
   var _private = {
     _freeSlack: {},
     _totalSlack: {},
     _slackNeedCalculate: true,
     _linkedTasksById: {},
+    _successorsByTaskId: {},
     _calculateTotalSlack: function _calculateTotalSlack() {
       var linksByTaskId = this._linkedTasksById;
-      helpers.forEach(linksBuilder.getLinkedTasks(), function (entry) {
-        var task = gantt.getTask(entry.target);
-        var slack = gantt.getFreeSlack(task);
-
-        if (!linksByTaskId[entry.source]) {
-          linksByTaskId[entry.source] = {
-            minSlack: {
-              target: entry.target,
-              slack: slack
-            },
+      var successorsByTaskId = this._successorsByTaskId;
+      this._totalSlack = {};
+      var linkedTasks = linksBuilder.getLinkedTasks();
+      linkedTasks.forEach(function (entry) {
+        // get successors
+        if (!successorsByTaskId[entry.source]) {
+          successorsByTaskId[entry.source] = {
             linked: []
           };
-        } else {
-          if (slack < linksByTaskId[entry.source].minSlack.slack) {
-            linksByTaskId[entry.source].minSlack = {
-              target: entry.target,
-              slack: slack
-            };
-          }
         }
 
-        linksByTaskId[entry.source].linked.push({
-          target: entry.target,
-          slack: slack
+        successorsByTaskId[entry.source].linked.push({
+          target: entry.target
+        }); // get predecessors
+
+        if (!linksByTaskId[entry.target]) {
+          linksByTaskId[entry.target] = {
+            source: entry.source,
+            linked: []
+          };
+        }
+
+        linksByTaskId[entry.target].linked.push({
+          source: entry.source
         });
       });
-      var totalSlackByTaskId = {};
-      gantt.eachTask(function (entry) {
-        if (gantt.isSummaryTask(entry)) {
+      var totalSlackByTaskId = {}; // first data for the calculation
+
+      var tasks = gantt.getTaskByTime(); // second data for the calculation
+
+      var secondIterationOrder = [];
+      var secondIterationData = {};
+
+      var slackCalculation = function slackCalculation(stackElement) {
+        var calculation = _private._predecessorChainSlackCount(stackElement.task, stackElement.additional, stackElement.chain);
+
+        if (typeof calculation === "undefined") {
           return;
-        }
+        } else if (_typeof(calculation) == "object") {
+          calculation.predecessorStack.forEach(function (predecessor) {
+            if (!secondIterationData[predecessor.task.id]) {
+              secondIterationOrder.push(predecessor.task.id);
+              secondIterationData[predecessor.task.id] = predecessor;
+            } else {
+              if (secondIterationData[predecessor.task.id].additional > predecessor.additional) {
+                secondIterationData[predecessor.task.id] = predecessor;
+              } // removing duplicate tasks in the order
 
-        if (totalSlackByTaskId[entry.id] === undefined) {
-          totalSlackByTaskId[entry.id] = 0;
-        }
 
-        totalSlackByTaskId[entry.id] += _private._chainSlackCount(entry);
+              while (secondIterationOrder.indexOf(predecessor.task.id) != -1) {
+                var duplicateIndex = secondIterationOrder.indexOf(predecessor.task.id);
+                secondIterationOrder.splice(duplicateIndex, 1);
+              }
+
+              secondIterationOrder.push(predecessor.task.id);
+            }
+          });
+          totalSlackByTaskId[stackElement.task.id] = calculation.taskSlack;
+        } else {
+          totalSlackByTaskId[stackElement.task.id] = calculation;
+        }
+      }; // start from the latest tasks
+
+
+      tasks.sort(function (a, b) {
+        return +b.end_date - +a.end_date;
       });
+
+      while (tasks.length) {
+        var task = tasks.shift();
+        var stackElement = {
+          task: task,
+          additional: 0,
+          chain: false
+        };
+
+        if (!gantt.isSummaryTask(stackElement.task)) {
+          slackCalculation(stackElement);
+        }
+      }
+
+      while (secondIterationOrder.length) {
+        var taskId = secondIterationOrder.shift();
+        var stackElement = secondIterationData[taskId];
+        slackCalculation(stackElement);
+      }
+
       gantt._slacksChanged = false;
       this._slackNeedCalculate = false;
-      this._totalSlack = totalSlackByTaskId;
-      return totalSlackByTaskId;
+      return this._totalSlack;
     },
-    _chainSlackCount: function _chainSlackCount(entry, additional) {
-      additional = additional || 0;
+    _predecessorChainSlackCount: function _predecessorChainSlackCount(task, additional, chain) {
+      var _this = this;
 
-      switch (true) {
-        case !this._linkedTasksById[entry.id]:
-          return gantt.calculateDuration(entry.end_date, gantt.getSubtaskDates().end_date) + additional;
+      if (!this._successorsByTaskId[task.id]) {
+        this._totalSlack[task.id] = gantt.calculateDuration(task.end_date, gantt.getSubtaskDates().end_date);
+        additional = this._totalSlack[task.id]; // this is the last chain element, so we can calculate the slack for all its predecessors
 
-        case this._linkedTasksById[entry.id].linked.length === 1:
-          return this._chainSlackCount(gantt.getTask(this._linkedTasksById[entry.id].linked[0].target), gantt.getFreeSlack(entry)) + additional;
-
-        case this._linkedTasksById[entry.id].linked.length > 1:
-          var targetWithMinimalSlack = this._getTargetWithMinimalSlack(this._linkedTasksById[entry.id].linked);
-
-          return this._chainSlackCount(gantt.getTask(targetWithMinimalSlack.target), gantt.getFreeSlack(entry)) + additional;
+        chain = true;
+      } else {
+        chain = chain || false;
       }
-    },
-    _getTargetWithMinimalSlack: function _getTargetWithMinimalSlack(linked) {
-      var result;
-      helpers.forEach(linked, function (entry) {
-        if (result === undefined || entry.slack < result.slack) {
-          result = entry;
+
+      if (!chain) {
+        // do not calculate slack if the task has successors, but chain calculation has not started yet
+        return undefined;
+      }
+
+      var linkedPredecessors = this._linkedTasksById[task.id];
+
+      if (linkedPredecessors) {
+        if (linkedPredecessors.linked.length > -1) {
+          var predecessorsLinks = linkedPredecessors.linked;
+          var predecessorStack = [];
+          predecessorsLinks.forEach(function (predecessorsLink) {
+            var predecessor = gantt.getTask(predecessorsLink.source);
+
+            var predecessorSlack = gantt.getSlack(predecessor, task) + _this._totalSlack[task.id];
+
+            if (_this._totalSlack[predecessor.id] === undefined || _this._totalSlack[predecessor.id] > predecessorSlack) {
+              _this._totalSlack[predecessor.id] = predecessorSlack;
+            }
+
+            if (chain) {
+              predecessorStack.push({
+                task: predecessor,
+                additional: _this._totalSlack[predecessor.id],
+                chain: true
+              });
+            }
+          });
+          return {
+            taskSlack: this._totalSlack[task.id],
+            predecessorStack: predecessorStack
+          };
         }
-      });
-      return result;
+      }
+
+      this._totalSlack;
+      return this._totalSlack[task.id];
     },
     _calculateTaskSlack: function _calculateTaskSlack(task) {
       var slack;
@@ -40283,17 +40789,28 @@ module.exports = function (gantt) {
     },
     _calculateHierarchySlack: function _calculateHierarchySlack(task) {
       var slack = 0;
+      var parentSlack = null;
       var from;
       var to = gantt.getSubtaskDates().end_date;
 
       if (gantt.isTaskExists(task.parent)) {
         from = gantt.getSubtaskDates(task.id).end_date || task.end_date;
+        var parent = gantt.getTask(task.parent);
+
+        if (parent.type == gantt.config.types.project && parent.$source && parent.$source.length) {
+          parentSlack = this._calculateRelationSlack(parent);
+        }
       } else {
         from = task.end_date;
       }
 
       slack = Math.max(gantt.calculateDuration(from, to), 0);
-      return slack;
+
+      if (parentSlack !== null && parentSlack < slack) {
+        return parentSlack;
+      } else {
+        return slack;
+      }
     },
     _resetTotalSlackCache: function _resetTotalSlackCache() {
       this._slackNeedCalculate = true;
@@ -40326,6 +40843,7 @@ module.exports = function (gantt) {
       }
 
       if (task.id !== undefined) {
+        // return this._chainSlackCount(task);
         return this._totalSlack[task.id];
       }
 
@@ -40333,6 +40851,7 @@ module.exports = function (gantt) {
     },
     dropCachedFreeSlack: function dropCachedFreeSlack() {
       this._linkedTasksById = {};
+      this._successorsByTaskId = {};
       this._freeSlack = {};
 
       this._resetTotalSlackCache();
@@ -41161,13 +41680,28 @@ module.exports = function (gantt) {
     group_tasks: function group_tasks(gantt, groups_array, relation_property, group_id, group_text) {
       this.update_settings(relation_property, group_id, group_text);
       var data = this.generate_data(gantt, groups_array);
-      this.loaded = data.data.length;
+      this.loaded = data.data.length; // save task selection before grouping tasks
+      // We need to iterate selected tasks with the "isSelectedTask" method
+      // because it will work with and without the multiselect extension
+
+      var selectedTasks = [];
+      gantt.eachTask(function (task) {
+        if (gantt.isSelectedTask(task.id)) {
+          selectedTasks.push(task.id);
+        }
+      });
 
       gantt._clear_data();
 
       var schedulingOnParse = gantt.config.auto_scheduling_initial;
       gantt.config.auto_scheduling_initial = false;
-      gantt.parse(data);
+      gantt.parse(data); // restore task selection after grouping tasks
+
+      selectedTasks.forEach(function (taskId) {
+        if (gantt.isTaskExists(taskId)) {
+          gantt.selectTask(taskId);
+        }
+      });
       gantt.config.auto_scheduling_initial = schedulingOnParse;
     }
   };
@@ -42111,7 +42645,7 @@ module.exports = function (gantt) {
     gantt.$keyboardNavigation.trapFocus = function trapFocus(root, e) {
       if (e.keyCode != 9) return false;
       var focusable = gantt.$keyboardNavigation.getFocusableNodes(root);
-      var currentFocus = document.activeElement;
+      var currentFocus = domHelpers.getActiveElement();
       var currentIndex = -1;
 
       for (var i = 0; i < focusable.length; i++) {
@@ -42451,7 +42985,7 @@ module.exports = function (gantt) {
       },
       // press header button
       "enter, space": function enterSpace() {
-        var node = document.activeElement;
+        var node = domHelpers.getActiveElement();
         node.click();
       },
       // add new task
@@ -43025,7 +43559,7 @@ module.exports = function (gantt) {
     var focusElement = null;
 
     function saveFocus() {
-      focusElement = document.activeElement;
+      focusElement = gantt.utils.dom.getActiveElement();
     }
 
     function restoreFocus() {
@@ -45183,7 +45717,7 @@ var Undo = /** @class */ (function () {
                 var getMethod = methods[command.entity].get;
                 var check = methods[command.entity].isExists;
                 if (command.type === actions.add) {
-                    gantt[method](command.oldValue, command.oldValue.parent, command.oldValue.$index);
+                    gantt[method](command.oldValue, command.oldValue.parent, command.oldValue.$local_index);
                 }
                 else if (command.type === actions.remove) {
                     if (gantt[check](command.value.id)) {
@@ -45201,6 +45735,8 @@ var Undo = /** @class */ (function () {
                 }
                 else if (command.type === actions.move) {
                     gantt[method](command.value.id, command.value.$local_index, command.value.parent);
+                    // GS-680: We should send the changes to the server after we undo vertical reorder
+                    gantt.callEvent("onRowDragEnd", [command.value.id]);
                 }
             }
         });
@@ -45313,7 +45849,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 function DHXGantt() {
   this.constants = __webpack_require__(/*! ../constants */ "./sources/constants/index.js");
-  this.version = "7.1.6";
+  this.version = "7.1.10";
   this.license = "enterprise";
   this.templates = {};
   this.ext = {};
@@ -48647,6 +49183,32 @@ var utils = __webpack_require__(/*! ./env */ "./sources/utils/env.js");
 
 module.exports = function (gantt) {
   return utils.isNode || !gantt.$root;
+};
+
+/***/ }),
+
+/***/ "./sources/utils/placeholder_task.js":
+/*!*******************************************!*\
+  !*** ./sources/utils/placeholder_task.js ***!
+  \*******************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+/**
+ * Check the over task or draggble task is placeholder task
+ */
+module.exports = function isPlaceholderTask(id, gantt, store, config) {
+  // return false;
+  var config = gantt ? gantt.config : config;
+
+  if (config && config.placeholder_task) {
+    if (store.exists(id)) {
+      var item = store.getItem(id);
+      return item.type === config.types.placeholder;
+    }
+  }
+
+  return false;
 };
 
 /***/ }),
