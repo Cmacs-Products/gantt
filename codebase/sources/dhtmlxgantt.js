@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxGantt v.7.1.9 Professional
+dhtmlxGantt v.7.1.10 Professional
 
 This software is covered by DHTMLX Enterprise License. Usage without proper license is prohibited.
 
@@ -9233,7 +9233,11 @@ module.exports = function (gantt) {
       this._lightbox_id = null;
       store.silent(function () {
         store.unselect();
-      });
+      }); // GS-1522. If we have multiselect, unselect all previously selected tasks
+
+      if (this.getSelectedTasks) {
+        this._multiselect.reset();
+      }
 
       if (this._tasks_dnd && this._tasks_dnd.drag) {
         this._tasks_dnd.drag.id = null;
@@ -9857,7 +9861,17 @@ var DataProcessor = /** @class */ (function () {
             this.$gantt.editStop();
         }
         if (typeof rowId === "undefined" || this._tSend) {
-            return this.sendAllData();
+            var updatedTasksAndLinks = this.modes && this.modes["task"] && this.modes["link"] && this.modes["task"].updatedRows.length && this.modes["link"].updatedRows.length; // tslint:disable-line
+            if (updatedTasksAndLinks) {
+                this.setGanttMode("task");
+                this.sendAllData();
+                this.setGanttMode("link");
+                this.sendAllData();
+                return;
+            }
+            else {
+                return this.sendAllData();
+            }
         }
         if (this._in_progress[rowId]) {
             return false;
@@ -14310,10 +14324,31 @@ function _init_tasks_range(gantt) {
 
   var unit = cfg.unit,
       step = cfg.step;
-  var range = resolveConfigRange(unit, gantt);
+  var range = resolveConfigRange(unit, gantt); // GS-1544: Show correct date range if we have tasks or only projects
 
   if (!(range.start_date && range.end_date)) {
-    range = gantt.getSubtaskDates();
+    var onlyProjectTasks = true;
+    var tasks = gantt.getTaskByTime();
+
+    for (var i = 0; i < tasks.length; i++) {
+      var task = tasks[i];
+
+      if (task.type !== gantt.config.types.project) {
+        onlyProjectTasks = false;
+        break;
+      }
+    }
+
+    if (tasks.length && onlyProjectTasks) {
+      var start_date = tasks[0].start_date;
+      var end_date = gantt.date.add(start_date, 1, gantt.config.duration_unit);
+      range = {
+        start_date: new Date(start_date),
+        end_date: new Date(end_date)
+      };
+    } else {
+      range = gantt.getSubtaskDates();
+    }
 
     if (!range.start_date || !range.end_date) {
       range = {
@@ -19926,7 +19961,7 @@ function createRowResizer(gantt, grid) {
       var store = grid.$config.rowStore;
       var config = grid.$getConfig();
       var dd = dnd.config;
-      var id = parseInt(dd.drag_id, 10),
+      var id = dd.drag_id,
           itemHeight = grid.getItemHeight(id),
           itemTop = grid.getItemTop(id);
       var pos = domHelpers.getNodePosition(grid.$grid_data),
@@ -19950,7 +19985,7 @@ function createRowResizer(gantt, grid) {
     row_drag_end: gantt.bind(function (dnd, obj, e) {
       var store = grid.$config.rowStore;
       var dd = dnd.config;
-      var id = parseInt(dd.drag_id, 10),
+      var id = dd.drag_id,
           item = store.getItem(id),
           oldItemHeight = grid.getItemHeight(id);
       var finalHeight = dd.marker_height;
@@ -20117,7 +20152,8 @@ function _init_dnd(gantt, grid) {
     return store.getIdByIndex(index);
   }, gantt);
   dnd.attachEvent("onDragMove", gantt.bind(function (obj, e) {
-    var maxBottom = gantt.$grid_data.getBoundingClientRect().height + (grid.$state.scrollTop || 0);
+    var gridDataSizes = gantt.$grid_data.getBoundingClientRect();
+    var maxBottom = gridDataSizes.height + gridDataSizes.y + (grid.$state.scrollTop || 0) + window.scrollY;
     var dd = dnd.config;
 
     var pos = dnd._getGridPos(e);
@@ -20347,10 +20383,15 @@ function _init_dnd(gantt, grid) {
   function getTargetTaskId(e) {
     var y = domHelpers.getRelativeEventPosition(e, grid.$grid_data).y;
     var store = grid.$config.rowStore;
+
+    if (!document.doctype) {
+      y += window.scrollY;
+    }
+
     y = y || 0; // limits for the marker according to the layout layer
 
     var scrollPos = grid.$state.scrollTop || 0;
-    var maxBottom = gantt.$grid_data.getBoundingClientRect().height + scrollPos;
+    var maxBottom = gantt.$grid_data.getBoundingClientRect().height + scrollPos + window.scrollY;
     var minTop = scrollPos;
     var firstVisibleTaskIndex = grid.getItemIndexByTopPosition(grid.$state.scrollTop);
 
@@ -20399,6 +20440,10 @@ function _init_dnd(gantt, grid) {
     var config = grid.$getConfig();
     var lockLevel = !config.order_branch_free;
     var eventTop = domHelpers.getRelativeEventPosition(e, grid.$grid_data).y;
+
+    if (!document.doctype) {
+      eventTop += window.scrollY;
+    }
 
     if (targetTaskId !== store.$getRootId()) {
       var rowTop = grid.getItemTop(targetTaskId);
@@ -20553,7 +20598,6 @@ function highlightPosition(target, root, grid) {
   var markerPos = getTaskMarkerPosition(target, grid); // setting position of row
 
   root.marker.style.left = markerPos.x + 9 + "px";
-  root.marker.style.top = markerPos.y + "px";
   var markerLine = root.markerLine;
 
   if (!markerLine) {
@@ -20585,7 +20629,7 @@ function removeLineHighlight(root) {
 
 function highlightRow(target, markerLine, grid) {
   var linePos = getLineMarkerPosition(target, grid);
-  var maxBottom = grid.$grid_data.getBoundingClientRect().bottom;
+  var maxBottom = grid.$grid_data.getBoundingClientRect().bottom + window.scrollY;
   markerLine.innerHTML = "<div class='gantt_grid_dnd_marker_line'></div>";
   markerLine.style.left = linePos.x + "px";
   markerLine.style.height = "4px";
@@ -20606,7 +20650,7 @@ function highlightFolder(target, markerFolder, grid) {
     x: 0,
     y: grid.getItemTop(id)
   }, grid);
-  var maxBottom = grid.$grid_data.getBoundingClientRect().bottom;
+  var maxBottom = grid.$grid_data.getBoundingClientRect().bottom + window.scrollY;
   markerFolder.innerHTML = "<div class='gantt_grid_dnd_marker_folder'></div>";
   markerFolder.style.width = grid.$grid_data.offsetWidth + "px";
   markerFolder.style.top = pos.y + "px";
@@ -27580,6 +27624,10 @@ var TimelineZoom = /** @class */ (function () {
             return zoomLevel;
         };
         this._getVisibleDate = function () {
+            // GS-1450. Don't try to get the visible date if there is no timeline
+            if (!_this.$gantt.$task) {
+                return null;
+            }
             var scrollPos = _this.$gantt.getScrollState().x;
             var viewPort = _this.$gantt.$task.offsetWidth;
             _this._visibleDate = _this.$gantt.dateFromPos(scrollPos + viewPort / 2);
@@ -27591,7 +27639,7 @@ var TimelineZoom = /** @class */ (function () {
             var chartConfig = gantt.copy(nextConfig);
             delete chartConfig.name;
             gantt.mixin(gantt.config, chartConfig, true);
-            var isRendered = !!gantt.$root;
+            var isRendered = !!gantt.$root && !!gantt.$task;
             if (isRendered) {
                 if (cursorOffset) {
                     var cursorDate = _this.$gantt.dateFromPos(cursorOffset + _this.$gantt.getScrollState().x);
@@ -35275,8 +35323,11 @@ module.exports = function (gantt) {
       gantt.attachEvent("onGanttRender", function () {
         if (gantt.config.initial_scroll) {
           var firstTask = gantt.getTaskByIndex(0);
-          var id = firstTask ? firstTask.id : gantt.config.root_id;
-          if (gantt.isTaskExists(id)) gantt.showTask(id);
+          var id = firstTask ? firstTask.id : gantt.config.root_id; // GS-1450. Don't scroll to the task if there is no timeline
+
+          if (gantt.isTaskExists(id) && gantt.$task && gantt.utils.dom.isChildOf(gantt.$task, gantt.$container)) {
+            gantt.showTask(id);
+          }
         }
       }, {
         once: true
@@ -36651,8 +36702,10 @@ CalendarWorkTimeStrategy.prototype = {
         if (timestamp !== null) {
           delete this.getConfig().dates[timestamp];
         }
-      } // Clear work units cache
+      } // Load updated settings and clear work units cache
 
+
+      this._parseSettings();
 
       this._clearCaches();
     }, this));
@@ -38572,8 +38625,14 @@ var AlapStrategy = /** @class */ (function () {
             }
         }
         if (maxEnd) {
-            maxEnd = this._gantt.getClosestWorkTime({ date: maxEnd, dir: "future", task: task });
-            maxStart = this._gantt.calculateEndDate({ start_date: maxEnd, duration: -task.duration, task: task });
+            // GS-1556. Tasks with zero duration shouldn't violate the project_end date
+            if (task.duration) {
+                maxEnd = this._gantt.getClosestWorkTime({ date: maxEnd, dir: "future", task: task });
+                maxStart = this._gantt.calculateEndDate({ start_date: maxEnd, duration: -task.duration, task: task });
+            }
+            else {
+                maxStart = maxEnd = this._gantt.getClosestWorkTime({ date: maxEnd, dir: "past", task: task });
+            }
         }
         var currentPlan = task_plan_1.TaskPlan.Create(masterPlan);
         currentPlan.link = linkId;
@@ -38675,16 +38734,21 @@ var AsapStrategy = /** @class */ (function () {
         }
         var maxEnd = null;
         if (minStart) {
-            minStart = this._gantt.getClosestWorkTime({
-                date: minStart,
-                dir: "future",
-                task: task
-            });
-            maxEnd = this._gantt.calculateEndDate({
-                start_date: minStart,
-                duration: task.duration,
-                task: task
-            });
+            if (task.duration) {
+                minStart = this._gantt.getClosestWorkTime({
+                    date: minStart,
+                    dir: "future",
+                    task: task
+                });
+                maxEnd = this._gantt.calculateEndDate({
+                    start_date: minStart,
+                    duration: task.duration,
+                    task: task
+                });
+            }
+            else {
+                minStart = maxEnd = this._gantt.getClosestWorkTime({ date: minStart, dir: "past", task: task });
+            }
         }
         var masterPlan = plansHash[taskId];
         var currentPlan = task_plan_1.TaskPlan.Create(masterPlan);
@@ -38756,11 +38820,21 @@ var AsapStrategy = /** @class */ (function () {
             });
         }
         else {
-            successorStart = this._gantt.getClosestWorkTime({
-                date: predecessorEnd,
-                dir: "future",
-                task: successor
-            });
+            var ffLink = this._gantt.getLink(relation.id).type === this._gantt.config.links.finish_to_finish;
+            if (!successor.duration && ffLink) {
+                successorStart = this._gantt.getClosestWorkTime({
+                    date: predecessorEnd,
+                    dir: "past",
+                    task: successor
+                });
+            }
+            else {
+                successorStart = this._gantt.getClosestWorkTime({
+                    date: predecessorEnd,
+                    dir: "future",
+                    task: successor
+                });
+            }
         }
         return successorStart;
     };
@@ -41606,13 +41680,28 @@ module.exports = function (gantt) {
     group_tasks: function group_tasks(gantt, groups_array, relation_property, group_id, group_text) {
       this.update_settings(relation_property, group_id, group_text);
       var data = this.generate_data(gantt, groups_array);
-      this.loaded = data.data.length;
+      this.loaded = data.data.length; // save task selection before grouping tasks
+      // We need to iterate selected tasks with the "isSelectedTask" method
+      // because it will work with and without the multiselect extension
+
+      var selectedTasks = [];
+      gantt.eachTask(function (task) {
+        if (gantt.isSelectedTask(task.id)) {
+          selectedTasks.push(task.id);
+        }
+      });
 
       gantt._clear_data();
 
       var schedulingOnParse = gantt.config.auto_scheduling_initial;
       gantt.config.auto_scheduling_initial = false;
-      gantt.parse(data);
+      gantt.parse(data); // restore task selection after grouping tasks
+
+      selectedTasks.forEach(function (taskId) {
+        if (gantt.isTaskExists(taskId)) {
+          gantt.selectTask(taskId);
+        }
+      });
       gantt.config.auto_scheduling_initial = schedulingOnParse;
     }
   };
@@ -45760,7 +45849,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 function DHXGantt() {
   this.constants = __webpack_require__(/*! ../constants */ "./sources/constants/index.js");
-  this.version = "7.1.9";
+  this.version = "7.1.10";
   this.license = "enterprise";
   this.templates = {};
   this.ext = {};
