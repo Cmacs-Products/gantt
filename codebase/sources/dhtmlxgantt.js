@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxGantt v.7.1.10 Professional
+dhtmlxGantt v.7.1.11 Professional
 
 This software is covered by DHTMLX Enterprise License. Usage without proper license is prohibited.
 
@@ -11937,9 +11937,9 @@ var storeRenderCreator = function storeRenderCreator(name, gantt) {
       var allData = null;
       var loadedRanges = {};
 
-      for (var i = 0; i < renderers.length; i++) {
-        var layer = renderers[i];
-        var layerData;
+      for (var _i = 0; _i < renderers.length; _i++) {
+        var layer = renderers[_i];
+        var layerData = void 0;
 
         if (layer.get_visible_range) {
           var range = layer.get_visible_range(store);
@@ -11959,7 +11959,7 @@ var storeRenderCreator = function storeRenderCreator(name, gantt) {
           layerData = allData;
         }
 
-        renderers[i].render_items(layerData);
+        renderers[_i].render_items(layerData);
       }
     },
     updateItems: function updateItems(layer) {
@@ -12074,8 +12074,15 @@ var storeRenderCreator = function storeRenderCreator(name, gantt) {
 
     if (!store.isSilent()) {
       var renderer = gantt.$services.getService("layers").getDataRender(name);
-      refreshId(renderer.getLayers(), oldId, newId, store.getItem(newId));
-      itemRepainter.renderItem(newId, renderer);
+
+      if (renderer) {
+        // missing check for renderer GS-1814
+        refreshId(renderer.getLayers(), oldId, newId, store.getItem(newId));
+        itemRepainter.renderItem(newId, renderer);
+      } else {
+        // GS-1814 repaint ui to apply new id when the datastore don't have own renderer
+        gantt.render();
+      }
     }
   });
 };
@@ -12524,7 +12531,9 @@ TreeDataStore.prototype = utils.mixin({
   move: function move(sid, tindex, parent) {
     //target id as 4th parameter
     var id = arguments[3];
-    id = replaceValidZeroId(id, this._ganttConfig.root_id);
+    var config = this._ganttConfig || {};
+    var root_id = config.root_id || 0;
+    id = replaceValidZeroId(id, root_id);
 
     if (id) {
       if (id === sid) return;
@@ -12565,7 +12574,7 @@ TreeDataStore.prototype = utils.mixin({
 
     tbranch = this.getChildren(parent);
     var tid = tbranch[tindex];
-    tid = replaceValidZeroId(tid, this._ganttConfig.root_id);
+    tid = replaceValidZeroId(tid, root_id);
     if (!tid) //adding as last element
       tbranch.push(sid);else tbranch = tbranch.slice(0, tindex).concat([sid]).concat(tbranch.slice(tindex));
 
@@ -13237,14 +13246,29 @@ var createDatastoreFacade = function createDatastoreFacade() {
       id = replaceValidZeroId(id, this.config.root_id);
 
       if (id) {
-        store.select(id);
+        var oldSelectId = this.getSelectedId();
+        store.select(id); // GS-730. Split task is not included in the tree, 
+        // so the datastore renderer will think that the task is not visible
+
+        if (oldSelectId && store.pull[oldSelectId].$split_subtask) {
+          this.refreshTask(oldSelectId);
+        }
+
+        if (store.pull[id].$split_subtask) {
+          this.refreshTask(id);
+        }
       }
 
       return store.getSelectedId();
     },
     unselectTask: function unselectTask(id) {
       var store = this.$data.tasksStore;
-      store.unselect(id);
+      store.unselect(id); // GS-730. Split task is not included in the tree, 
+      // so the datastore renderer will think that the task is not visible
+
+      if (id && store.pull[id].$split_subtask) {
+        this.refreshTask(id);
+      }
     },
     isSelectedTask: function isSelectedTask(id) {
       return this.$data.tasksStore.isSelected(id);
@@ -13523,12 +13547,56 @@ function createLayoutFacade() {
     return gantt.$ui.getView("grid");
   }
 
+  function getBaseCell(gantt) {
+    var timeline = getTimeline(gantt);
+
+    if (timeline && !timeline.$config.hidden) {
+      return timeline;
+    } else {
+      var grid = getGrid(gantt);
+
+      if (grid || !grid.$config.hidden) {
+        return grid;
+      } else {
+        return null;
+      }
+    }
+  }
+
   function getVerticalScrollbar(gantt) {
-    return gantt.$ui.getView("scrollVer");
+    var baseCell = null; // GS-1150: if we reorder or resize something in the grid, we should obtain the grid container
+
+    var gridDrag = false;
+    var gridMarkers = [".gantt_drag_marker.gantt_grid_resize_area", ".gantt_drag_marker .gantt_row.gantt_row_task", ".gantt_drag_marker.gantt_grid_dnd_marker"];
+    gridMarkers.forEach(function (selector) {
+      gridDrag = gridDrag || !!document.querySelector(selector);
+    });
+
+    if (gridDrag) {
+      baseCell = getGrid(gantt);
+    } else {
+      baseCell = getBaseCell(gantt);
+    }
+
+    var verticalScrollbar = getAttachedScrollbar(gantt, baseCell, "scrollY");
+    return verticalScrollbar;
   }
 
   function getHorizontalScrollbar(gantt) {
-    return gantt.$ui.getView("scrollHor");
+    var baseCell = getBaseCell(gantt);
+
+    if (baseCell.id == "grid") {
+      return null; // if the timeline is not displayed, do not return the scrollbar
+    }
+
+    var horizontalScrollbar = getAttachedScrollbar(gantt, baseCell, "scrollX");
+    return horizontalScrollbar;
+  }
+
+  function getAttachedScrollbar(gantt, cell, type) {
+    var attachedScrollbar = cell.$config[type];
+    var scrollbarView = gantt.$ui.getView(attachedScrollbar);
+    return scrollbarView;
   }
 
   var DEFAULT_VALUE = "DEFAULT_VALUE";
@@ -13785,7 +13853,15 @@ function createLayoutFacade() {
         top = pos.top - (dataHeight - this.getTaskBarHeight(id)) / 2;
       }
 
-      this.scrollTo(left, top);
+      this.scrollTo(left, top); // GS-1150: if the grid and timeline have different scrollbars, we need to scroll thegrid to show the task
+
+      var gridCell = getGrid(this);
+      var timelineCell = getTimeline(this);
+
+      if (gridCell && timelineCell && gridCell.$config.scrollY != timelineCell.$config.scrollY) {
+        var gridScrollbar = getAttachedScrollbar(this, gridCell, "scrollY");
+        gridScrollbar.scrollTo(null, top);
+      }
     },
     _scroll_state: function _scroll_state() {
       var result = {
@@ -14146,7 +14222,8 @@ module.exports = function (gantt) {
       this.config.preserve_scroll = preserveScroll;
 
       if (this.config.preserve_scroll && pos) {
-        if (posX) {
+        // GS-1640: We need pos.y, otherwise part of the timeline won't be rendered if the scrollbar disappeared
+        if (posX || pos.y) {
           var new_pos = gantt.getScrollState();
           var new_date = gantt.dateFromPos(new_pos.x);
 
@@ -14163,6 +14240,23 @@ module.exports = function (gantt) {
             }
 
             gantt.scrollTo(posX, posY);
+          }
+        } // GS-1640: We need to reset the scroll position for the grid if the scrollbar disappeared and
+        // the grid and timeline have different scrollbars
+
+
+        var gridCell = gantt.$ui.getView("grid");
+
+        if (gridCell) {
+          var attachedScrollbar = gridCell.$config.scrollY;
+          var verticalScrollbar = gantt.$ui.getView(attachedScrollbar);
+
+          if (verticalScrollbar) {
+            var scrollbarNodeVisible = gantt.utils.dom.isChildOf(verticalScrollbar.$view, gantt.$container);
+
+            if (!scrollbarNodeVisible) {
+              gridCell.scrollTo(undefined, 0);
+            }
           }
         }
       }
@@ -26972,13 +27066,25 @@ module.exports = function (gantt) {
 
     if (!container) {
       return;
+    } // GS-1150: if we reorder or resize something in the grid, we should obtain the grid container
+
+
+    var gridDrag = false;
+    var gridMarkers = [".gantt_drag_marker.gantt_grid_resize_area", ".gantt_drag_marker .gantt_row.gantt_row_task", ".gantt_drag_marker.gantt_grid_dnd_marker"];
+    gridMarkers.forEach(function (selector) {
+      gridDrag = gridDrag || !!document.querySelector(selector);
+    });
+
+    if (gridDrag) {
+      container = gantt.$grid;
     }
 
     var box = domHelpers.getNodePosition(container);
     var posX = eventPos.x - box.x;
-    var posY = eventPos.y - box.y;
+    var posY = eventPos.y - box.y + window.scrollY; // GS-1315: window.scrollY here and below for the elements above Gantt
+
     var scrollLeft = isMove ? 0 : need_scroll(posX, box.width, startPos.x - box.x);
-    var scrollTop = need_scroll(posY, box.height, startPos.y - box.y);
+    var scrollTop = need_scroll(posY, box.height, startPos.y - box.y + window.scrollY);
     var scrollState = gantt.getScrollState();
     var currentScrollTop = scrollState.y,
         scrollOuterHeight = scrollState.inner_height,
@@ -30631,7 +30737,20 @@ function createMixin(_super) {
           }
 
           var assignments = gantt.getResourceAssignments(resource.id);
-          var addedTasks = {};
+          var addedTasks = {}; // GS-1505. We need to sort assignments before updating tasks. 
+          // Iterating them without that will affect the order of featched tasks in the resource store
+
+          assignments.sort(function (a, b) {
+            var resourceData = resourceStore.pull;
+            var resource1 = resourceData["".concat(a.task_id, "_").concat(a.resource_id)];
+            var resource2 = resourceData["".concat(b.task_id, "_").concat(b.resource_id)];
+
+            if (resource1 && resource2) {
+              return resource1.$local_index - resource2.$local_index;
+            } else {
+              return 0;
+            }
+          });
           assignments.forEach(function (a) {
             if (addedTasks[a.task_id]) {
               return;
@@ -31295,7 +31414,9 @@ var initLinksDND = function initLinksDND(timeline, gantt) {
     var viewportSize = getVieportSize();
     var offsetX = gantt.config.tooltip_offset_x || markerDefaultOffset;
     var offsetY = gantt.config.tooltip_offset_y || markerDefaultOffset;
-    var scrollSize = gantt.config.scroll_size || scrollDefaultSize;
+    var scrollSize = gantt.config.scroll_size || scrollDefaultSize; // GS-1315: Add offset if there are elements above Gantt
+
+    var ganttOffsetY = gantt.$container.getBoundingClientRect().y + window.scrollY;
     var position = {
       y: oldPos.y + offsetY,
       x: oldPos.x + offsetX,
@@ -31303,8 +31424,8 @@ var initLinksDND = function initLinksDND(timeline, gantt) {
       right: oldPos.x + markerSize.width + offsetX + scrollSize
     };
 
-    if (position.bottom > viewportSize.bottom) {
-      position.y = viewportSize.bottom - markerSize.height - offsetY;
+    if (position.bottom > viewportSize.bottom + ganttOffsetY) {
+      position.y = viewportSize.bottom + ganttOffsetY - markerSize.height - offsetY;
     }
 
     if (position.right > viewportSize.right) {
@@ -39934,7 +40055,7 @@ var EventsManager = /** @class */ (function () {
         this._gantt = gantt;
         this._domEvents = gantt._createDomEventScope();
     }
-    EventsManager.prototype.attach = function (selectedRegion, useKey) {
+    EventsManager.prototype.attach = function (selectedRegion, useKey, ignore) {
         var _this = this;
         var gantt = this._gantt;
         var _target = selectedRegion.getViewPort();
@@ -39963,8 +40084,19 @@ var EventsManager = /** @class */ (function () {
         };
         this._domEvents.attach(_target, "mousedown", function (event) {
             scheduledDndCoordinates = null;
-            if (gantt.utils.dom.closest(event.target, ".gantt_task_line, .gantt_task_link")) {
-                return;
+            var filterTargets = ".gantt_task_line, .gantt_task_link";
+            if (ignore !== undefined) {
+                if (ignore instanceof Array) {
+                    filterTargets = ignore.join(", ");
+                }
+                else {
+                    filterTargets = ignore;
+                }
+            }
+            if (filterTargets) {
+                if (gantt.utils.dom.closest(event.target, filterTargets)) {
+                    return;
+                }
             }
             state.registerProvider("clickDrag", function () {
                 var result = { autoscroll: _this._mouseDown };
@@ -39990,6 +40122,15 @@ var EventsManager = /** @class */ (function () {
         this._domEvents.attach(_target, "mousemove", function (event) {
             if (useKey && event[useKey] !== true) {
                 return;
+            }
+            // GS-854. If we don't have useKey for the click_drag extension,
+            // check the drag_timeline to not simultaneously use both extensions
+            var dragTimeline = _this._gantt.ext.clickDrag;
+            var dragTimelineUseKey = (_this._gantt.config.drag_timeline || {}).useKey;
+            if (dragTimeline && dragTimelineUseKey) {
+                if (!useKey && event[dragTimelineUseKey]) {
+                    return;
+                }
             }
             var coordinates = null;
             if (!_this._mouseDown && scheduledDndCoordinates) {
@@ -40090,7 +40231,7 @@ function default_1(gantt) {
             config.singleRow = clickDrag.singleRow === undefined ? defaultConfig.singleRow : clickDrag.singleRow;
             var timeline = gantt.$ui.getView("timeline");
             var selectedRegion = new selectedRegion_1.SelectedRegion(config, gantt, timeline);
-            gantt.ext.clickDrag.attach(selectedRegion, clickDrag.useKey);
+            gantt.ext.clickDrag.attach(selectedRegion, clickDrag.useKey, clickDrag.ignore);
         }
     });
     gantt.attachEvent("onDestroy", function () {
@@ -41065,6 +41206,15 @@ var EventsManager = /** @class */ (function () {
             var useKey = gantt.config.drag_timeline.useKey;
             if (useKey && event[useKey] !== true) {
                 return;
+            }
+            // GS-854. If we don't have useKey for the drag_timeline extension,
+            // check the click_drag to not simultaneously use both extensions
+            var clickDrag = _this._gantt.ext.clickDrag;
+            var clickDragUseKey = (_this._gantt.config.click_drag || {}).useKey;
+            if (clickDrag && clickDragUseKey) {
+                if (!useKey && event[clickDragUseKey]) {
+                    return;
+                }
             }
             if (_this._mouseDown === true) {
                 _this._trace.push({ x: event.clientX, y: event.clientY });
@@ -45849,7 +45999,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 function DHXGantt() {
   this.constants = __webpack_require__(/*! ../constants */ "./sources/constants/index.js");
-  this.version = "7.1.10";
+  this.version = "7.1.11";
   this.license = "enterprise";
   this.templates = {};
   this.ext = {};
