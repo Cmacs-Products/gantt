@@ -213,10 +213,14 @@ function add_export_methods(gantt){
 
 		this._no_progress_colors =config.visual === "base-colors";
 
+var data = null;
+		if (!gantt.env.isNode){
+			data = this._serialize_table(config).data;
+		}
 		config = defaults(config, {
 			name:"gantt.xlsx",
 			title:"Tasks",
-			data:this._serialize_table(config).data,
+			data:data,
 			columns:this._serialize_columns({ rawDates: true }),
 			version:this.version
 		});
@@ -259,7 +263,8 @@ function add_export_methods(gantt){
 
 		formData.append("type", "excel-parse");
 		formData.append("data", JSON.stringify({
-			sheet: config.sheet || 0
+			sheet: config.sheet || 0, 
+			server: url
 		}));
 
 		if(store)
@@ -295,16 +300,24 @@ function add_export_methods(gantt){
 	}
 
 	gantt.importFromExcel = function(config){
-		var formData = config.data;
+try {
+			var formData = config.data;
+			if(formData instanceof FormData){
 
-		if(formData instanceof FormData){
-
-		}else if(formData instanceof File){
-			var data = new FormData();
-			data.append("file", formData);
-			config.data = data;
+			}
+			else if(formData instanceof File){
+				var data = new FormData();
+				data.append("file", formData);
+				config.data = data;
+			}	
 		}
-		sendImportAjax(config);
+		catch(error){}
+		if (gantt.env.isNode){
+			nodejsImportExcel(config)
+		}
+		else {
+			sendImportAjax(config);
+		}
 	};
 
 	gantt._msp_config = function(config){
@@ -389,8 +402,23 @@ function add_export_methods(gantt){
 			}
 		}
 
-		if (data.callback)
+if (gantt.env.isNode){
+			var url = data.server || apiUrl;
+			var pack = {
+				type: type,
+				store: 0,
+				data: JSON.stringify(data)
+			}
+			var callbackFunction = data.callback || function (response){
+				console.log(response)
+			} 				
+
+			return xdr(url, pack, callbackFunction)
+		}
+
+		if (data.callback){
 			return gantt._ajax_to_export(data, type, data.callback);
+		}
 
 		var form = this._create_hidden_form();
 		form.firstChild.action = data.server || apiUrl;
@@ -719,8 +747,12 @@ function add_export_methods(gantt){
 }
 
 add_export_methods(gantt);
-if (window.Gantt && Gantt.plugin)
-	Gantt.plugin(add_export_methods);
+try {
+	if (window && window.Gantt && Gantt.plugin){
+		Gantt.plugin(add_export_methods);
+	}
+}
+catch(error){}
 
 })();
 
@@ -989,7 +1021,7 @@ if (window.Gantt && Gantt.plugin)
 			var formData = config.data;
 			var callback = config.callback;
 
-			var settings = {};
+			var settings = {server: url};
 			if(config.durationUnit) settings.durationUnit = config.durationUnit
 			if(config.projectProperties) settings.projectProperties = config.projectProperties;
 			if(config.taskProperties) settings.taskProperties = config.taskProperties;
@@ -1034,14 +1066,23 @@ if (window.Gantt && Gantt.plugin)
 		gantt.importFromMSProject = function(config){
 			var formData = config.data;
 
-			if(formData instanceof FormData){
+try {
+				if(formData instanceof FormData){
 
-			}else if(formData instanceof File){
-				var data = new FormData();
-				data.append("file", formData);
-				config.data = data;
+				}
+				else if(formData instanceof File){
+					var data = new FormData();
+					data.append("file", formData);
+					config.data = data;
+				}	
 			}
-			sendImportAjax(config);
+			catch(error){}
+			if(gantt.env.isNode){
+				nodejsImportMSP(config);
+			}
+			else{
+				sendImportAjax(config);
+			}	
 		};
 
 		gantt.importFromPrimaveraP6 = function(config){
@@ -1051,7 +1092,11 @@ if (window.Gantt && Gantt.plugin)
 	}
 
 	add_export_methods(gantt);
-	if (window.Gantt && Gantt.plugin)
-		Gantt.plugin(add_export_methods);
+try {
+		if (window && window.Gantt && Gantt.plugin){
+			Gantt.plugin(add_export_methods);
+		}
+	}
+	catch(error){}
 
 })();
