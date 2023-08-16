@@ -1,7 +1,7 @@
 DHTMLX Gantt
 ============
 
-Version 8.0.3, Professional Edition
+Version 8.0.4, Professional Edition
 
 
 License
