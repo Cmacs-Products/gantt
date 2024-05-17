@@ -1,11 +1,11 @@
 /*
 @license
 
-dhtmlxGantt v.8.0.4 Professional
+dhtmlxGantt v.8.0.7 Professional
 
 This software is covered by DHTMLX Enterprise License. Usage without proper license is prohibited.
 
-(c) XB Software Ltd.
+(c) XB Software
 
 */
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -8649,6 +8649,51 @@ module.exports = (typeof self === "undefined" ? "undefined" : _typeof(self)) == 
 
 /***/ }),
 
+/***/ "./node_modules/https-browserify/index.js":
+/*!************************************************!*\
+  !*** ./node_modules/https-browserify/index.js ***!
+  \************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var http = __webpack_require__(/*! http */ "./node_modules/stream-http/index.js");
+
+var url = __webpack_require__(/*! url */ "./node_modules/url/url.js");
+
+var https = module.exports;
+
+for (var key in http) {
+  if (http.hasOwnProperty(key)) https[key] = http[key];
+}
+
+https.request = function (params, cb) {
+  params = validateParams(params);
+  return http.request.call(this, params, cb);
+};
+
+https.get = function (params, cb) {
+  params = validateParams(params);
+  return http.get.call(this, params, cb);
+};
+
+function validateParams(params) {
+  if (typeof params === 'string') {
+    params = url.parse(params);
+  }
+
+  if (!params.protocol) {
+    params.protocol = 'https:';
+  }
+
+  if (params.protocol !== 'https:') {
+    throw new Error('Protocol "' + params.protocol + '" not supported. Expected "https:"');
+  }
+
+  return params;
+}
+
+/***/ }),
+
 /***/ "./node_modules/ieee754/index.js":
 /*!***************************************!*\
   !*** ./node_modules/ieee754/index.js ***!
@@ -12232,6 +12277,291 @@ exports.Writable = __webpack_require__(/*! ./lib/_stream_writable.js */ "./node_
 exports.Duplex = __webpack_require__(/*! ./lib/_stream_duplex.js */ "./node_modules/readable-stream/lib/_stream_duplex.js");
 exports.Transform = __webpack_require__(/*! ./lib/_stream_transform.js */ "./node_modules/readable-stream/lib/_stream_transform.js");
 exports.PassThrough = __webpack_require__(/*! ./lib/_stream_passthrough.js */ "./node_modules/readable-stream/lib/_stream_passthrough.js");
+
+/***/ }),
+
+/***/ "./node_modules/remote-client/dist/remote.es6.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/remote-client/dist/remote.es6.js ***!
+  \*******************************************************/
+/*! exports provided: Client */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Client", function() { return t; });
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var t = /*#__PURE__*/function () {
+  function t(_t) {
+    _classCallCheck(this, t);
+
+    var e = _t.url,
+        s = _t.token;
+    this._url = e, this._token = s, this._mode = 1, this._seed = 1, this._queue = [], this.data = {}, this.api = {}, this._events = {};
+  }
+
+  _createClass(t, [{
+    key: "headers",
+    value: function headers() {
+      return {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "Remote-Token": this._token
+      };
+    }
+  }, {
+    key: "fetch",
+    value: function (_fetch) {
+      function fetch(_x, _x2) {
+        return _fetch.apply(this, arguments);
+      }
+
+      fetch.toString = function () {
+        return _fetch.toString();
+      };
+
+      return fetch;
+    }(function (_t2, e) {
+      var s = {
+        credentials: "include",
+        headers: this.headers()
+      };
+      return e && (s.method = "POST", s.body = e), fetch(_t2, s).then(function (_t3) {
+        return _t3.json();
+      });
+    })
+  }, {
+    key: "load",
+    value: function load(_t4) {
+      var _this = this;
+
+      return _t4 && (this._url = _t4), this.fetch(this._url).then(function (_t5) {
+        return _this.parse(_t5);
+      });
+    }
+  }, {
+    key: "parse",
+    value: function parse(_t6) {
+      var e = _t6.key,
+          s = _t6.websocket;
+      e && (this._token = _t6.key);
+
+      for (var _e in _t6.data) {
+        this.data[_e] = _t6.data[_e];
+      }
+
+      for (var _e2 in _t6.api) {
+        var _s = this.api[_e2] = {},
+            i = _t6.api[_e2];
+
+        for (var _t29 in i) {
+          _s[_t29] = this._wrapper(_e2 + "." + _t29);
+        }
+      }
+
+      return s && this.connect(), this;
+    }
+  }, {
+    key: "connect",
+    value: function connect() {
+      var _this2 = this;
+
+      var _t8 = this._socket;
+      _t8 && (this._socket = null, _t8.onclose = function () {}, _t8.close()), this._mode = 2, this._socket = function (t, e, s, i) {
+        var n = e;
+        "/" === n[0] && (n = document.location.protocol + "//" + document.location.host + e);
+        n = n.replace(/^http(s|):/, "ws$1:");
+        var o = -1 != n.indexOf("?") ? "&" : "?";
+        n = "".concat(n).concat(o, "token=").concat(s, "&ws=1");
+        var r = new WebSocket(n);
+        return r.onclose = function () {
+          return setTimeout(function () {
+            return t.connect();
+          }, 2e3);
+        }, r.onmessage = function (e) {
+          var s = JSON.parse(e.data);
+
+          switch (s.action) {
+            case "result":
+              t.result(s.body, []);
+              break;
+
+            case "event":
+              t.fire(s.body.name, s.body.value);
+              break;
+
+            case "start":
+              i();
+              break;
+
+            default:
+              t.onError(s.data);
+          }
+        }, r;
+      }(this, this._url, this._token, function () {
+        return _this2._mode = 3, _this2._send(), _this2._resubscribe(), _this2;
+      });
+    }
+  }, {
+    key: "_wrapper",
+    value: function _wrapper(_t9) {
+      return function () {
+        var _this3 = this;
+
+        var e = [].slice.call(arguments);
+        var s = null;
+        var i = new Promise(function (i, n) {
+          s = {
+            data: {
+              id: _this3._uid(),
+              name: _t9,
+              args: e
+            },
+            status: 1,
+            resolve: i,
+            reject: n
+          }, _this3._queue.push(s);
+        });
+        return this.onCall(s, i), 3 === this._mode ? this._send(s) : setTimeout(function () {
+          return _this3._send();
+        }, 1), i;
+      }.bind(this);
+    }
+  }, {
+    key: "_uid",
+    value: function _uid() {
+      return (this._seed++).toString();
+    }
+  }, {
+    key: "_send",
+    value: function _send(_t10) {
+      var _this4 = this;
+
+      if (2 == this._mode) return void setTimeout(function () {
+        return _this4._send();
+      }, 100);
+      var e = _t10 ? [_t10] : this._queue.filter(function (_t11) {
+        return 1 === _t11.status;
+      });
+      if (!e.length) return;
+      var s = e.map(function (_t12) {
+        return _t12.status = 2, _t12.data;
+      });
+      3 !== this._mode ? this.fetch(this._url, JSON.stringify(s))["catch"](function (_t13) {
+        return _this4.onError(_t13);
+      }).then(function (_t14) {
+        return _this4.result(_t14, s);
+      }) : this._socket.send(JSON.stringify({
+        action: "call",
+        body: s
+      }));
+    }
+  }, {
+    key: "result",
+    value: function result(_t15, e) {
+      var s = {};
+      if (_t15) for (var _e3 = 0; _e3 < _t15.length; _e3++) {
+        s[_t15[_e3].id] = _t15[_e3];
+      } else for (var _t30 = 0; _t30 < e.length; _t30++) {
+        s[e[_t30].id] = {
+          id: e[_t30].id,
+          error: "Network Error",
+          data: null
+        };
+      }
+
+      for (var _t31 = this._queue.length - 1; _t31 >= 0; _t31--) {
+        var _e4 = this._queue[_t31],
+            i = s[_e4.data.id];
+        i && (this.onResponse(_e4, i), i.error ? _e4.reject(i.error) : _e4.resolve(i.data), this._queue.splice(_t31, 1));
+      }
+    }
+  }, {
+    key: "on",
+    value: function on(_t18, e) {
+      var s = this._uid();
+
+      var i = this._events[_t18];
+      var n = !!i;
+      return n || (i = this._events[_t18] = []), i.push({
+        id: s,
+        handler: e
+      }), n || 3 != this._mode || this._socket.send(JSON.stringify({
+        action: "subscribe",
+        name: _t18
+      })), {
+        name: _t18,
+        id: s
+      };
+    }
+  }, {
+    key: "_resubscribe",
+    value: function _resubscribe() {
+      if (3 == this._mode) for (var _t32 in this._events) {
+        this._socket.send(JSON.stringify({
+          action: "subscribe",
+          name: _t32
+        }));
+      }
+    }
+  }, {
+    key: "detach",
+    value: function detach(_t20) {
+      if (!_t20) {
+        if (3 == this._mode) for (var _t33 in this._events) {
+          this._socket.send(JSON.stringify({
+            action: "unsubscribe",
+            key: _t33
+          }));
+        }
+        return void (this._events = {});
+      }
+
+      var e = _t20.id,
+          s = _t20.name,
+          i = this._events[s];
+
+      if (i) {
+        var _t34 = i.filter(function (_t23) {
+          return _t23.id != e;
+        });
+
+        _t34.length ? this._events[s] = _t34 : (delete this._events[s], 3 == this._mode && this._socket.send(JSON.stringify({
+          action: "unsubscribe",
+          name: s
+        })));
+      }
+    }
+  }, {
+    key: "fire",
+    value: function fire(_t24, e) {
+      var s = this._events[_t24];
+      if (s) for (var _t35 = 0; _t35 < s.length; _t35++) {
+        s[_t35].handler(e);
+      }
+    }
+  }, {
+    key: "onError",
+    value: function onError(_t26) {
+      return null;
+    }
+  }, {
+    key: "onCall",
+    value: function onCall(_t27, e) {}
+  }, {
+    key: "onResponse",
+    value: function onResponse(_t28, e) {}
+  }]);
+
+  return t;
+}();
+
+
 
 /***/ }),
 
@@ -16111,6 +16441,7 @@ module.exports = function (gantt) {
           // when user moves mouse at first time after onmousedown
           this.config.started = true;
           this.config.ignore = false;
+          gantt._touch_drag = true;
 
           if (this.callEvent("onBeforeDragStart", [obj, this.config.original_target]) === false) {
             this.config.ignore = true;
@@ -16156,6 +16487,7 @@ module.exports = function (gantt) {
       }
 
       this.config.started = false;
+      gantt._touch_drag = false;
       document.body.className = document.body.className.replace(" gantt_noselect", "");
     },
     getPosition: function getPosition(e) {
@@ -17100,11 +17432,23 @@ module.exports = function (gantt) {
       });
     } else {
       var first = gantt.getTaskByIndex(0);
-      startDate = first ? first.start_date ? first.start_date : first.end_date ? gantt.calculateEndDate({
-        start_date: first.end_date,
-        duration: -gantt.config.duration_step,
-        task: item
-      }) : null : gantt.config.start_date || gantt.getState().min_date;
+      var minDate = gantt.config.start_date || gantt.getState().min_date;
+
+      if (first) {
+        if (first.start_date) {
+          startDate = first.start_date;
+        } else if (first.end_date) {
+          startDate = gantt.calculateEndDate({
+            start_date: first.end_date,
+            duration: -gantt.config.duration_step,
+            task: item
+          });
+        } else {
+          startDate = minDate;
+        }
+      } else {
+        startDate = minDate;
+      }
     }
 
     gantt.assert(startDate, "Invalid dates");
@@ -24342,7 +24686,7 @@ module.exports = function (gantt) {
         if (batchUpdate) {
           needUpdate = true;
           needUpdateFor[id] = item;
-        } else {
+        } else if (!item.unscheduled) {
           _syncOnTaskUpdate(item);
         }
       });
@@ -25525,11 +25869,19 @@ module.exports = function (gantt) {
           var includeRelation = true;
 
           if (gantt.config.auto_scheduling_use_progress) {
-            var target = gantt.getTask(rel.target);
+            var _target = gantt.getTask(rel.target);
 
-            if (target.progress == 1) {
+            if (_target.progress == 1) {
               includeRelation = false;
             }
+          } // don't process links for unscheduled tasks
+
+
+          var target = gantt.getTask(rel.target);
+          var source = gantt.getTask(rel.source);
+
+          if (target.unscheduled || source.unscheduled) {
+            includeRelation = false;
           }
 
           if (includeRelation) {
@@ -25683,10 +26035,12 @@ module.exports = function (gantt) {
       } else {
         if (!c.$target.length && !(gantt.getState("tasksDnd").drag_id == c.id)) {
           // drag_id - virtual lag shouldn't restrict task that is being moved inside project
+          // GS-2330. successor is already moved to the predecessor's end_date,
+          // so we need to use the successor's (target) calendar
           return gantt.calculateDuration({
             start_date: targetDates.start_date,
             end_date: c.start_date,
-            task: source
+            task: target
           });
         } else {
           return 0;
@@ -25717,7 +26071,31 @@ module.exports = function (gantt) {
   };
 
   gantt._isAutoSchedulable = function (task) {
-    return task.auto_scheduling !== false;
+    var scheduleTask = task.auto_scheduling !== false && task.unscheduled !== true;
+
+    if (!scheduleTask) {
+      return false;
+    } // GS-2420. Don't auto-schedule project when it has only unscheduled children
+
+
+    if (this.isSummaryTask(task)) {
+      var unscheduledChildren = true;
+      this.eachTask(function (child) {
+        if (unscheduledChildren) {
+          var scheduleChild = gantt._isAutoSchedulable(child);
+
+          if (scheduleChild) {
+            unscheduledChildren = false;
+          }
+        }
+      }, task.id);
+
+      if (unscheduledChildren) {
+        return false;
+      }
+    }
+
+    return true;
   };
 
   gantt._getImplicitLinks = function (link, parent, selectOffset, selectSourceLinks) {
@@ -25736,7 +26114,12 @@ module.exports = function (gantt) {
       var skipChild;
 
       for (var c in children) {
-        var task = children[c];
+        var task = children[c]; // don't create subtask links with unscheduled tasks
+
+        if (!gantt._isAutoSchedulable(task)) {
+          continue;
+        }
+
         var linksCollection = selectSourceLinks ? task.$source : task.$target;
         skipChild = false;
 
@@ -25745,7 +26128,7 @@ module.exports = function (gantt) {
           var siblingId = selectSourceLinks ? siblingLink.target : siblingLink.source;
           var siblingTask = children[siblingId];
 
-          if (siblingTask && task.auto_scheduling !== false && siblingTask.auto_scheduling !== false) {
+          if (siblingTask && gantt._isAutoSchedulable(task) && gantt._isAutoSchedulable(siblingTask)) {
             if (siblingLink.target == siblingTask.id && Math.abs(siblingLink.lag) <= siblingTask.duration || siblingLink.target == task.id && Math.abs(siblingLink.lag) <= task.duration) {
               skipChild = true;
               break;
@@ -25784,7 +26167,7 @@ module.exports = function (gantt) {
       if (this.isTaskExists(link.source) && this.isTaskExists(link.target)) {
         var target = this.getTask(link.target);
 
-        if (!this._isAutoSchedulable(target)) {
+        if (!this._isAutoSchedulable(target) || !this._isAutoSchedulable(task)) {
           continue;
         } else if (gantt.config.auto_scheduling_use_progress) {
           if (target.progress == 1) {
@@ -25943,6 +26326,64 @@ module.exports = function (gantt) {
 
 /***/ }),
 
+/***/ "./sources/core/remote/remote_events.js":
+/*!**********************************************!*\
+  !*** ./sources/core/remote/remote_events.js ***!
+  \**********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var remote_client = __webpack_require__(/*! remote-client */ "./node_modules/remote-client/dist/remote.es6.js");
+
+module.exports = {
+  remoteEvents: function remoteEvents(url, token) {
+    var _this = this;
+
+    var remote = new remote_client.Client({
+      url: url,
+      token: token
+    }); // temporary patch, as we do not want credentials
+
+    remote.fetch = function (url, body) {
+      var req = {
+        headers: this.headers()
+      };
+
+      if (body) {
+        req.method = "POST";
+        req.body = body;
+      }
+
+      return fetch(url, req).then(function (res) {
+        return res.json();
+      });
+    };
+
+    this._ready = remote.load().then(function (back) {
+      return _this._remote = back;
+    });
+
+    function ready() {
+      return this._ready;
+    }
+
+    function on(name, handler) {
+      this.ready().then(function (back) {
+        if (typeof name === "string") back.on(name, handler);else {
+          for (var key in name) {
+            back.on(key, name[key]);
+          }
+        }
+      });
+    }
+
+    this.ready = ready;
+    this.on = on;
+  }
+};
+
+/***/ }),
+
 /***/ "./sources/core/resource_timetable_builder.js":
 /*!****************************************************!*\
   !*** ./sources/core/resource_timetable_builder.js ***!
@@ -25983,6 +26424,10 @@ module.exports = function createResourceTimelineBuilder(gantt) {
 
       if (assignmentsPassed) {
         task = gantt.getTask(item.task_id);
+      }
+
+      if (task.unscheduled) {
+        continue; // do not process assignments for unscheduled tasks
       }
 
       var minDate = item.start_date || task.start_date;
@@ -26472,6 +26917,8 @@ function create(gantt) {
       var visibleIndex = findVisibleIndex(grid, columnName);
       el.setAttribute("data-column-index", visibleIndex);
 
+      gantt._waiAria.inlineEditorAttr(el);
+
       if (config.rtl) {
         el.style.cssText = ["top:" + pos.top + "px", "right:" + pos.right + "px", "width:" + pos.width + "px", "height:" + pos.height + "px"].join(";");
       } else {
@@ -26957,7 +27404,7 @@ module.exports = function (gantt) {
 
       var minAttr = minValue ? " min='" + dateToStr(minValue) + "' " : "";
       var maxAttr = maxValue ? " max='" + dateToStr(maxValue) + "' " : "";
-      var html = "<div style='width:140px'><input type='date' " + minAttr + maxAttr + " name='" + column.name + "'></div>";
+      var html = "<div style='width:140px' role='cell'><input type='date' ".concat(minAttr, " ").concat(maxAttr, " name='").concat(column.name, "' title='").concat(column.name, "'></div>");
       placeholder.innerHTML = html;
     },
     set_value: function set_value(value, id, column, node) {
@@ -27014,7 +27461,7 @@ module.exports = function (gantt) {
 
   utils.mixin(TextEditor.prototype, {
     show: function show(id, column, config, placeholder) {
-      var html = "<div><input type='text' name='" + column.name + "'></div>";
+      var html = "<div role='cell'><input type='text' name='".concat(column.name, "' title='").concat(column.name, "'></div>");
       placeholder.innerHTML = html;
     },
     set_value: function set_value(value, id, column, node) {
@@ -27053,7 +27500,7 @@ module.exports = function (gantt) {
     show: function show(id, column, config, placeholder) {
       var min = config.min || 0,
           max = config.max || 100;
-      var html = "<div><input type='number' min='" + min + "' max='" + max + "' name='" + column.name + "'></div>";
+      var html = "<div role='cell'><input type='number' min='".concat(min, "' max='").concat(max, "' name='").concat(column.name, "' title='").concat(column.name, "'></div>");
       placeholder.innerHTML = html;
     },
     get_value: function get_value(id, column, node) {
@@ -27177,7 +27624,7 @@ module.exports = function (gantt) {
 
   utils.mixin(PredecessorEditor.prototype, {
     show: function show(id, column, config, placeholder) {
-      var html = "<div><input type='text' name='" + column.name + "'></div>";
+      var html = "<div role='cell'><input type='text' name='".concat(column.name, "' title='").concat(column.name, "'></div>");
       placeholder.innerHTML = html;
     },
     hide: function hide() {},
@@ -27236,7 +27683,7 @@ module.exports = function (gantt) {
 
   utils.mixin(SelectEditor.prototype, {
     show: function show(id, column, config, placeholder) {
-      var html = "<div><select name='" + column.name + "'>";
+      var html = "<div role='cell'><select name='".concat(column.name, "' title='").concat(column.name, "'>");
       var optionsHtml = [],
           options = config.options || [];
 
@@ -27278,7 +27725,7 @@ module.exports = function (gantt) {
 
   utils.mixin(TextEditor.prototype, {
     show: function show(id, column, config, placeholder) {
-      var html = "<div><input type='text' name='" + column.name + "'></div>";
+      var html = "<div role='cell'><input type='text' name='".concat(column.name, "' title='").concat(column.name, "'></div>");
       placeholder.innerHTML = html;
     }
   }, true);
@@ -27861,8 +28308,7 @@ Grid.prototype = {
       var newColumnWidth = 0;
       columns.forEach(function (col) {
         newColumnWidth += col[columnProperty] || config.min_grid_column_width;
-      });
-      newColumnWidth--; // the total column width shouldn't match the outerWidth
+      }); //newColumnWidth--; // the total column width shouldn't match the outerWidth // GS-2190 reducing width seems to be not needed
 
       var columnsWidth = Math.max(newColumnWidth, width);
       innerWidth = this._setColumnsWidth(columnsWidth);
@@ -28942,7 +29388,7 @@ function createRowResizer(gantt, grid) {
       var dd = dnd.config;
       var id = dd.drag_id,
           itemHeight = grid.getItemHeight(id),
-          itemTop = grid.getItemTop(id);
+          itemTop = grid.getItemTop(id) - obj.scrollTop;
       var pos = domHelpers.getNodePosition(grid.$grid_data),
           pointerPosition = parseInt(dd.marker.style.top, 10),
           markerStartPosition = itemTop + pos.y,
@@ -29142,6 +29588,8 @@ function _init_dnd(gantt, grid) {
     var dd = dnd.config;
 
     var pos = dnd._getGridPos(e);
+
+    gantt._waiAria.reorderMarkerAttr(dd.marker);
 
     var config = grid.$getConfig(),
         store = getStore(); // setting position of row
@@ -29478,6 +29926,9 @@ function _init_dnd(gantt, grid) {
 
     higlighter.highlightPosition(target, dnd.config, grid);
     dnd.config.drop_target = target;
+
+    gantt._waiAria.reorderMarkerAttr(dnd.config.marker);
+
     this.callEvent("onRowDragMove", [dnd.config.id, target.targetParent, target.targetIndex]);
     return true;
   }, gantt));
@@ -31410,7 +31861,11 @@ var ResizerCell = function (_super) {
 
     _this._startOnMove = function (e) {
       // don't scroll the timeline on touch devices
-      if (e.touches) _this.$gantt._prevent_touch_scroll = true;
+      if (e.touches) {
+        _this.$gantt._touch_drag = true; // GS-45. Don't scroll the timeline while dragging something on touch devices (e.g. resizer)
+
+        _this.$gantt._prevent_touch_scroll = true;
+      }
 
       if (_this._isPosChanged(e)) {
         _this._clearListeneres();
@@ -32689,7 +33144,7 @@ module.exports = function (gantt) {
 
   CheckboxControl.prototype.render = function (sns) {
     var height = (sns.height || "23") + "px";
-    var html = "<div class='gantt_cal_ltext' style='height:" + height + ";'>";
+    var html = "<div class='gantt_cal_ltext gantt_section_" + sns.name + "' style='height:" + height + ";'>";
 
     if (sns.options && sns.options.length) {
       for (var i = 0; i < sns.options.length; i++) {
@@ -32891,7 +33346,13 @@ module.exports = function (gantt) {
     }
 
     var duration = "<div class='gantt_duration' " + singleDate + ">" + "<input type='button' class='gantt_duration_dec' value='−'" + readonly + ">" + "<input type='text' value='5days' class='" + durationInputClass + "'" + readonly + " " + ariaAttr + ">" + "<input type='button' class='gantt_duration_inc' value='+'" + readonly + ">" + label + "<span></span>" + "</div>";
-    var html = "<div style='height:" + (sns.height || 30) + "px;padding-top:0px;font-size:inherit;' class='gantt_section_time'>" + time + " " + duration + "</div>";
+    var sectionClassName = "gantt_section_time";
+
+    if (sns.name !== "time") {
+      sectionClassName += " gantt_section_" + sns.name;
+    }
+
+    var html = "<div style='height:" + (sns.height || 30) + "px;padding-top:0px;font-size:inherit;' class='" + sectionClassName + "'>" + time + " " + duration + "</div>";
     return html;
   };
 
@@ -33167,7 +33628,7 @@ module.exports = function (gantt) {
 
   RadioControl.prototype.render = function (sns) {
     var height = (sns.height || "23") + "px";
-    var html = "<div class='gantt_cal_ltext' style='height:" + height + ";'>";
+    var html = "<div class='gantt_cal_ltext gantt_section_" + sns.name + "' style='height:" + height + ";'>";
 
     if (sns.options && sns.options.length) {
       for (var i = 0; i < sns.options.length; i++) {
@@ -33254,7 +33715,7 @@ module.exports = function (gantt) {
     var resourceFilterPlaceholder = gantt.locale.labels.resources_filter_placeholder || sns.filter_placeholder || "type to filter";
     var resourceFilterLabel = gantt.locale.labels.resources_filter_label || "hide empty"; // if set fixed height for this element, then resize of lightbox will be calculated improperly
 
-    html = "<div" + (!isNaN(sns.height) ? " style='height: " + sns.height + "px;'" : "") + ">";
+    html = "<div" + (!isNaN(sns.height) ? " style='height: " + sns.height + "px;'" : "") + " class='gantt_section_" + sns.name + "'>";
     html += "<div class='gantt_cal_ltext gantt_resources_filter'><input type='text' class='gantt_resources_filter_input' placeholder='" + resourceFilterPlaceholder + "'> <label><input class='switch_unsetted' type='checkbox'><span class='matherial_checkbox_icon'></span>" + resourceFilterLabel + "</label></div>";
     html += "<div class='gantt_cal_ltext gantt_resources' data-name='" + sns.name + "'></div>";
     html += "</div>";
@@ -33698,10 +34159,13 @@ module.exports = function (gantt) {
 
   SelectControl.prototype.render = function (sns) {
     var height = (sns.height || "23") + "px";
-    var html = "<div class='gantt_cal_ltext' style='height:" + height + ";'>";
+    var html = "<div class='gantt_cal_ltext gantt_section_" + sns.name + "' style='height:" + height + ";'>";
     html += htmlHelpers.getHtmlSelect(sns.options, [{
       key: "style",
       value: "width:100%;"
+    }, {
+      key: "title",
+      value: sns.name
     }]);
     html += "</div>";
     return html;
@@ -33755,7 +34219,7 @@ module.exports = function (gantt) {
 
   TemplateControl.prototype.render = function (sns) {
     var height = (sns.height || "30") + "px";
-    return "<div class='gantt_cal_ltext gantt_cal_template' style='height:" + height + ";'></div>";
+    return "<div class='gantt_cal_ltext gantt_cal_template gantt_section_" + sns.name + "' style='height:" + height + ";'></div>";
   };
 
   TemplateControl.prototype.set_value = function (node, value) {
@@ -33794,7 +34258,7 @@ module.exports = function (gantt) {
 
   TextareaControl.prototype.render = function (sns) {
     var height = (sns.height || "130") + "px";
-    return "<div class='gantt_cal_ltext' style='height:" + height + ";'><textarea></textarea></div>";
+    return "<div class='gantt_cal_ltext gantt_section_" + sns.name + "' style='height:" + height + ";'><textarea></textarea></div>";
   };
 
   TextareaControl.prototype.set_value = function (node, value) {
@@ -33841,7 +34305,13 @@ module.exports = function (gantt) {
 
   TimeControl.prototype.render = function (sns) {
     var time = gantt.form_blocks.getTimePicker.call(this, sns);
-    var html = "<div style='height:" + (sns.height || 30) + "px;padding-top:0px;font-size:inherit;text-align:center;' class='gantt_section_time'>";
+    var sectionClassName = "gantt_section_time";
+
+    if (sns.name !== "time") {
+      sectionClassName += " gantt_section_" + sns.name;
+    }
+
+    var html = "<div style='height:" + (sns.height || 30) + "px;padding-top:0px;font-size:inherit;text-align:center;' class='" + sectionClassName + "'>";
     html += time;
 
     if (sns.single_date) {
@@ -34169,6 +34639,10 @@ module.exports = function (gantt) {
 
       if (gantt.config.drag_lightbox) {
         lightboxDiv.firstChild.onmousedown = gantt._ready_to_dnd;
+
+        lightboxDiv.firstChild.ontouchstart = function (e) {
+          gantt._ready_to_dnd(e.touches[0]);
+        };
 
         lightboxDiv.firstChild.onselectstart = function () {
           return false;
@@ -34631,7 +35105,13 @@ module.exports = function (gantt) {
   gantt._init_dnd_events = function () {
     var eventElement = gantt._lightbox_root;
     this.event(eventElement, "mousemove", gantt._move_while_dnd);
-    this.event(eventElement, "mouseup", gantt._finish_dnd); // GS-1952: In Salesforce environment, the lightbox is attached to the Gantt container. 
+    this.event(eventElement, "mouseup", gantt._finish_dnd);
+    this.event(eventElement, "touchmove", function (e) {
+      gantt._move_while_dnd(e.touches[0]);
+    });
+    this.event(eventElement, "touchend", function (e) {
+      gantt._finish_dnd(e.touches[0]);
+    }); // GS-1952: In Salesforce environment, the lightbox is attached to the Gantt container. 
     // So when Gantt is reinitialized, the events are no longer attached to the Gantt container.
     // gantt._init_dnd_events = function () {
     // };
@@ -39247,10 +39727,10 @@ function createGridTaskRowResizerRender(gantt) {
     var resize_el = document.createElement("div");
     resize_el.className = "gantt_task_grid_row_resize_wrap";
     resize_el.style.top = view.getItemTop(item.id) + view.getItemHeight(item.id) + "px";
-    resize_el.innerHTML = "<div class='gantt_task_grid_row_resize'></div>";
+    resize_el.innerHTML = "<div class='gantt_task_grid_row_resize' role='cell'></div>";
     resize_el.setAttribute(config.task_grid_row_resizer_attribute, item.id);
 
-    gantt._waiAria.gridSeparatorAttr(resize_el);
+    gantt._waiAria.rowResizerAttr(resize_el);
 
     return resize_el;
   }
@@ -39327,8 +39807,11 @@ function createTaskRenderer(gantt) {
       var el = document.createElement('div'),
           sizes = gantt.getTaskPosition(task); // vertical position is not important for the rollup tasks as long as the parent is rendered
 
-      viewPort.y = 0;
-      viewPort.y_end = gantt.$task_bg.scrollHeight;
+      if (viewPort) {
+        viewPort.y = 0;
+        viewPort.y_end = gantt.$task_bg.scrollHeight;
+      }
+
       task.$rollup.forEach(function (itemId) {
         if (!gantt.isTaskExists(itemId)) {
           return;
@@ -40010,6 +40493,7 @@ function addResizeListener(gantt) {
 function listenWindowResize(gantt, window) {
   var resizeTimeout = gantt.config.container_resize_timeout || 20;
   var resizeDelay;
+  var previousSize = getContainerSize(gantt);
 
   if (gantt.config.container_resize_method == "timeout") {
     lowlevelResizeWatcher();
@@ -40019,6 +40503,14 @@ function listenWindowResize(gantt, window) {
         if (gantt.$scrollbarRepaint) {
           gantt.$scrollbarRepaint = null;
         } else {
+          // GS-2140. Don't repaint Gantt if it has the same sizes
+          var currentSize = getContainerSize(gantt);
+
+          if (previousSize.x == currentSize.x && previousSize.y == currentSize.y) {
+            return;
+          }
+
+          previousSize = currentSize;
           repaintGantt();
         }
       });
@@ -40048,6 +40540,13 @@ function listenWindowResize(gantt, window) {
     previousWidth = gantt.$root.offsetWidth;
     setTimeout(lowlevelResizeWatcher, resizeTimeout);
   }
+}
+
+function getContainerSize(gantt) {
+  return {
+    x: gantt.$root.offsetWidth,
+    y: gantt.$root.offsetHeight
+  };
 }
 
 module.exports = addResizeListener;
@@ -42654,7 +43153,10 @@ function createTaskDND(timeline, gantt) {
         var doFinalize = function doFinalize() {
           if (finalizingBulkMove) {
             for (var i in dragMultiple) {
-              this._finalize_mouse_up(dragMultiple[i].id, config, dragMultiple[i], e);
+              // GS-1057: Don't call drag events for the dragged task as they will be called later
+              if (dragMultiple[i].id != drag.id) {
+                this._finalize_mouse_up(dragMultiple[i].id, config, dragMultiple[i], e);
+              }
             }
           }
 
@@ -43617,10 +44119,19 @@ module.exports = function (gantt) {
     }
   };
 
-  gantt.attachEvent("onGanttReady", gantt.bind(function () {
-    if (this.config.touch != "force") this.config.touch = this.config.touch && (navigator.userAgent.indexOf("Mobile") != -1 || navigator.userAgent.indexOf("iPad") != -1 || navigator.userAgent.indexOf("Android") != -1 || navigator.userAgent.indexOf("Touch") != -1) || navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  gantt.attachEvent("onGanttReady", addTouchEvents);
+  gantt.attachEvent("onGanttLayoutReady", function () {
+    if (gantt.$container) {
+      gantt.attachEvent("onGanttRender", addTouchEvents, {
+        once: true
+      });
+    }
+  });
 
-    if (this.config.touch) {
+  function addTouchEvents() {
+    if (gantt.config.touch != "force") gantt.config.touch = gantt.config.touch && (navigator.userAgent.indexOf("Mobile") != -1 || navigator.userAgent.indexOf("iPad") != -1 || navigator.userAgent.indexOf("Android") != -1 || navigator.userAgent.indexOf("Touch") != -1) || navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+
+    if (gantt.config.touch) {
       var touchEventsSupported = true;
 
       try {
@@ -43630,7 +44141,7 @@ module.exports = function (gantt) {
       }
 
       if (touchEventsSupported) {
-        this._touch_events(["touchmove", "touchstart", "touchend"], function (ev) {
+        gantt._touch_events(["touchmove", "touchstart", "touchend"], function (ev) {
           if (ev.touches && ev.touches.length > 1) return null;
           if (ev.touches[0]) return {
             target: ev.target,
@@ -43643,14 +44154,14 @@ module.exports = function (gantt) {
           return false;
         });
       } else if (window.navigator.pointerEnabled) {
-        this._touch_events(["pointermove", "pointerdown", "pointerup"], function (ev) {
+        gantt._touch_events(["pointermove", "pointerdown", "pointerup"], function (ev) {
           if (ev.pointerType == "mouse") return null;
           return ev;
         }, function (ev) {
           return !ev || ev.pointerType == "mouse";
         });
       } else if (window.navigator.msPointerEnabled) {
-        this._touch_events(["MSPointerMove", "MSPointerDown", "MSPointerUp"], function (ev) {
+        gantt._touch_events(["MSPointerMove", "MSPointerDown", "MSPointerUp"], function (ev) {
           if (ev.pointerType == ev.MSPOINTER_TYPE_MOUSE) return null;
           return ev;
         }, function (ev) {
@@ -43658,7 +44169,7 @@ module.exports = function (gantt) {
         });
       }
     }
-  }, gantt));
+  }
 
   function findTargetView(event) {
     var allViews = gantt.$layout.getCellsByType("viewCell");
@@ -43737,6 +44248,7 @@ module.exports = function (gantt) {
     var currentDndId = null;
     var dndNodes = [];
     var targetView = null;
+    var multiTouchEvents = {};
 
     for (var i = 0; i < touchHandlers.length; i++) {
       gantt.eventRemove(touchHandlers[i][0], touchHandlers[i][1], touchHandlers[i][2]);
@@ -43799,14 +44311,29 @@ module.exports = function (gantt) {
       }
 
       return true;
-    }]); //block touch context menu in IE10
+    }]); // prevent page drag on touch move
+
+    try {
+      document.addEventListener('touchmove', function (e) {
+        if (gantt._touch_drag) {
+          block_action(e);
+        }
+      }, {
+        passive: false
+      });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("Cannot prevent touch event for the page drag");
+    } //block touch context menu in IE10
+
 
     touchHandlers.push([this.$container, "contextmenu", function (e) {
       if (actionMode) return block_action(e);
     }]); //touch start
 
     touchHandlers.push([this.$container, names[1], function (e) {
-      // block pull-to-refresh
+      multiTouchEvents = e.touches.length; // block pull-to-refresh
+
       if (document && document.body) {
         document.body.classList.add("gantt_touch_active");
       }
@@ -43834,6 +44361,7 @@ module.exports = function (gantt) {
           tasksDnD.on_mouse_down(actionStart);
 
           if (tasksDnD.drag && tasksDnD.drag.start_drag) {
+            // we need that as touch events break if the target node is removed from the DOM
             cloneTaskRendered(taskId);
 
             tasksDnD._start_dnd(actionStart);
@@ -43882,9 +44410,9 @@ module.exports = function (gantt) {
       currentDndId = null; //dbl-tap handling
 
       if (actionStart && dblclicktime) {
-        var now = new Date();
+        var now = new Date(); // doubletap shouldn't happen with multitouch
 
-        if (now - dblclicktime < 500) {
+        if (now - dblclicktime < 500 && multiTouchEvents <= 1) {
           var mouseEvents = gantt.$services.getService("mouseEvents");
           mouseEvents.onDoubleClick(actionStart);
           block_action(e);
@@ -43900,7 +44428,7 @@ module.exports = function (gantt) {
 
 
     function block_action(e) {
-      if (e && e.preventDefault) {
+      if (e && e.preventDefault && e.cancelable) {
         e.preventDefault();
       }
 
@@ -43913,19 +44441,56 @@ module.exports = function (gantt) {
 
       var task = gantt.getTask(taskId);
 
-      if (task && gantt.isTaskVisible(taskId)) {
-        currentDndId = taskId;
+      if (task) {
+        var visible = gantt.isTaskVisible(taskId);
 
-        for (var i = 0; i < renders.length; i++) {
-          task = renders[i].rendered[taskId];
+        if (visible) {
+          currentDndId = taskId;
 
-          if (task && task.getAttribute(gantt.config.task_attribute) && task.getAttribute(gantt.config.task_attribute) == taskId) {
-            var copy = task.cloneNode(true);
-            dndNodes.push(task);
-            renders[i].rendered[taskId] = copy;
-            task.style.display = "none";
-            copy.className += " gantt_drag_move ";
-            task.parentNode.appendChild(copy); //return copy;
+          for (var _i = 0; _i < renders.length; _i++) {
+            task = renders[_i].rendered[taskId];
+
+            if (task && task.getAttribute(gantt.config.task_attribute) && task.getAttribute(gantt.config.task_attribute) == taskId) {
+              var copy = task.cloneNode(true);
+              dndNodes.push(task);
+              renders[_i].rendered[taskId] = copy;
+              task.style.display = "none";
+              copy.className += " gantt_drag_move ";
+              task.parentNode.appendChild(copy); //return copy;
+            }
+          }
+        } else if (task.$split_subtask) {
+          var renderedParent = task.$rendered_parent;
+          visible = gantt.isTaskVisible(renderedParent);
+
+          if (!visible) {
+            return;
+          }
+
+          currentDndId = taskId;
+
+          for (var _i2 = 0; _i2 < renders.length; _i2++) {
+            var parent = renders[_i2].rendered[renderedParent];
+            var taskNode = void 0;
+
+            if (parent && parent.childNodes) {
+              taskNode = parent.querySelector("[".concat(gantt.config.task_attribute, "=\"").concat(task.id, "\"]"));
+            }
+
+            if (taskNode) {
+              // move the child node to a different parent as the task bar will be repainted
+              // and the initial node will be lost
+              var _copy = taskNode.cloneNode(true);
+
+              taskNode.parentNode.appendChild(_copy);
+              gantt.$task_bars.appendChild(taskNode);
+              taskNode.style.display = "none"; // don't add the node as rendered otherwise it will be lost:
+              // renders[i].rendered[taskId] = taskNode;
+              // instead, add it to dndNodes as its elements will be removed after drag
+
+              dndNodes.push(taskNode);
+              taskNode = null;
+            }
           }
         }
       }
@@ -44657,11 +45222,12 @@ module.exports = function (gantt) {
       if (task.$dataprocessor_class) {
         div.setAttribute("aria-busy", true);
       }
-
-      div.setAttribute("aria-selected", gantt.isSelectedTask(task.id) ? "true" : "false");
     },
     setTaskBarAttr: function setTaskBarAttr(task, div) {
-      this._taskCommonAttr(task, div);
+      this._taskCommonAttr(task, div); // task bars are complex elements that should be treated as a single element
+
+
+      div.setAttribute("role", "img");
 
       if (!gantt.isReadonly(task) && gantt.config.drag_move) {
         if (task.id != gantt.getState("tasksDnd").drag_id) {
@@ -44678,8 +45244,12 @@ module.exports = function (gantt) {
         div.setAttribute("aria-grabbed", false);
       }
 
-      div.setAttribute("role", "row");
-      div.setAttribute("aria-level", task.$level);
+      div.setAttribute("role", "row"); // selected attribute should be added only to the grid  because
+      // other parts don't have the keyboard navigation
+
+      div.setAttribute("aria-selected", gantt.isSelectedTask(task.id) ? "true" : "false"); // allowed values start from 1, set 1 for non-tree datastores
+
+      div.setAttribute("aria-level", task.$level + 1 || 1);
 
       if (gantt.hasChild(task.id)) {
         div.setAttribute("aria-expanded", task.$open ? "true" : "false");
@@ -44689,7 +45259,9 @@ module.exports = function (gantt) {
       var linkTypes = gantt.config.links;
       var toStart = link.type == linkTypes.finish_to_start || link.type == linkTypes.start_to_start;
       var fromStart = link.type == linkTypes.start_to_start || link.type == linkTypes.start_to_finish;
-      var content = gantt.locale.labels.link + " " + gantt.templates.drag_link(link.source, fromStart, link.target, toStart);
+      var content = gantt.locale.labels.link + " " + gantt.templates.drag_link(link.source, fromStart, link.target, toStart); // links are complex elements that should be treated as a single element
+
+      div.setAttribute("role", "img");
       div.setAttribute("aria-label", stripHTMLLite(content));
 
       if (gantt.isReadonly(link)) {
@@ -44697,7 +45269,12 @@ module.exports = function (gantt) {
       }
     },
     gridSeparatorAttr: function gridSeparatorAttr(div) {
-      div.setAttribute("role", "separator");
+      // the only valid role for the grid header
+      div.setAttribute("role", "columnheader");
+    },
+    rowResizerAttr: function rowResizerAttr(div) {
+      // the only valid role for the grid header
+      div.setAttribute("role", "row");
     },
     lightboxHiddenAttr: function lightboxHiddenAttr(div) {
       div.setAttribute("aria-hidden", "true");
@@ -44709,6 +45286,7 @@ module.exports = function (gantt) {
       div.setAttribute("role", "dialog");
       div.setAttribute("aria-hidden", "true");
       div.firstChild.setAttribute("role", "heading");
+      div.firstChild.setAttribute("aria-level", "1");
     },
     lightboxButtonAttrString: function lightboxButtonAttrString(buttonName) {
       return this.getAttributeString({
@@ -44751,8 +45329,12 @@ module.exports = function (gantt) {
     lightboxDurationInputAttrString: function lightboxDurationInputAttrString(section) {
       return this.getAttributeString({
         "aria-label": gantt.locale.labels.column_duration,
-        "aria-valuemin": "0"
+        "aria-valuemin": "0",
+        "role": "spinbutton"
       });
+    },
+    inlineEditorAttr: function inlineEditorAttr(div) {
+      div.setAttribute("role", "row");
     },
     gridAttrString: function gridAttrString() {
       return [" role='treegrid'", gantt.config.multiselect ? "aria-multiselectable='true'" : "aria-multiselectable='false'", " "].join(" ");
@@ -44764,8 +45346,9 @@ module.exports = function (gantt) {
       var attrs = "";
 
       if (column.name == "add") {
+        // a more precise role is button, but it is not valid for the grid header
         attrs = this.getAttributeString({
-          "role": "button",
+          "role": "columnheader",
           "aria-label": gantt.locale.labels.new_task
         });
       } else {
@@ -44789,6 +45372,11 @@ module.exports = function (gantt) {
     },
     gridDataAttrString: function gridDataAttrString() {
       return "role='rowgroup'";
+    },
+    reorderMarkerAttr: function reorderMarkerAttr(div) {
+      div.setAttribute("role", "grid");
+      div.firstChild.removeAttribute("aria-level");
+      div.firstChild.setAttribute("aria-grabbed", "true");
     },
     gridCellAttrString: function gridCellAttrString(column, textValue, task) {
       var attributes = {
@@ -44826,7 +45414,7 @@ module.exports = function (gantt) {
       div.setAttribute("role", "dialog");
     },
     quickInfoHeaderAttrString: function quickInfoHeaderAttrString() {
-      return " role='heading' ";
+      return " role='heading' aria-level='1' ";
     },
     quickInfoHeader: function quickInfoHeader(div, header) {
       div.setAttribute("aria-label", header);
@@ -46688,7 +47276,13 @@ CalendarWorkTimeStrategy.prototype = {
         if (rangeMinutes > left) {
           rangeMinutes = left;
           minuteTo = minuteFrom + left * 60;
-        }
+        } // TODO: verify testcase https://dhtmlxsupport.teamwork.com/desk/tickets/9625700/messages
+
+        /*if (rangeMinutes === 0) {
+        	rangeMinutes = left;
+        	minuteTo = minuteFrom + (left * 60);
+        }*/
+
 
         var addMinutes = Math.round((minuteTo - minuteFrom) / 60);
         left -= addMinutes;
@@ -46730,7 +47324,13 @@ CalendarWorkTimeStrategy.prototype = {
         if (rangeMinutes > left) {
           rangeMinutes = left;
           minuteTo = minuteFrom - left * 60;
-        }
+        } // TODO: verify testcase https://dhtmlxsupport.teamwork.com/desk/tickets/9625700/messages
+
+        /*if (rangeMinutes === 0) {
+        	rangeMinutes = left;
+        	minuteTo = minuteFrom - (left * 60);
+        }*/
+
 
         var addMinutes = Math.abs(Math.round((minuteFrom - minuteTo) / 60));
         left -= addMinutes;
@@ -48802,7 +49402,7 @@ var ConstraintsHelper = /** @class */ (function () {
         };
         this.getConstraintType = function (task) {
             // GS-1487. Don't add a constraint if auto-scheduling is cancelled
-            if (task.auto_scheduling === false) {
+            if (!_this._gantt._isAutoSchedulable(task)) {
                 return;
             }
             var constraint = _this._getTaskConstraint(task);
@@ -49175,7 +49775,7 @@ var AutoSchedulingPlanner = /** @class */ (function () {
         for (var i = 0; i < mainSequence.length; i++) {
             var currentId = mainSequence[i];
             var task = gantt.getTask(currentId);
-            if (task.auto_scheduling === false) {
+            if (!gantt._isAutoSchedulable(task)) {
                 continue;
             }
             var plan = mainSequenceStrategy.resolveRelationDate(currentId, relationsMap[currentId], plansHash);
@@ -49190,7 +49790,7 @@ var AutoSchedulingPlanner = /** @class */ (function () {
         for (var i = 0; i < secondarySequence.length; i++) {
             var currentId = secondarySequence[i];
             var task = gantt.getTask(currentId);
-            if (task.auto_scheduling === false) {
+            if (!gantt._isAutoSchedulable(task)) {
                 continue;
             }
             if (!isMainSequence(task)) {
@@ -49275,7 +49875,7 @@ var AutoSchedulingPlanner = /** @class */ (function () {
         for (var i = 0, len = orderedIds.length; i < len; i++) {
             var id = orderedIds[i];
             var task = gantt.getTask(id);
-            if (task.auto_scheduling === false) {
+            if (!gantt._isAutoSchedulable(task)) {
                 continue;
             }
             relationsMap[id] = {
@@ -49518,8 +50118,10 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
         var relations;
         var movedTask;
         gantt.attachEvent("onBeforeTaskDrag", function (id, mode, task) {
-            if (gantt.config.auto_scheduling &&
-                gantt.config.auto_scheduling_move_projects) {
+            if (gantt.config.auto_scheduling
+            // We need to get the movedTask so that we can use it later internally
+            // && gantt.config.auto_scheduling_move_projects
+            ) {
                 // collect relations before drag and drop  in order to have original positions of subtasks within project since they are used as lag when moving dependent project
                 if (gantt.getState().drag_mode !== "progress") {
                     relations = getRelations(id);
@@ -49558,12 +50160,12 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
         // GS-686. We shouldn't change the constraint after changing only the duration or end_date
         function shouldKeepConstraints(task, oldTask) {
             if (gantt.config.schedule_from_end) {
-                if (task.end_date.valueOf() === oldTask.end_date.valueOf()) {
+                if (oldTask.end_date && task.end_date && task.end_date.valueOf() === oldTask.end_date.valueOf()) {
                     return true;
                 }
             }
             else {
-                if (task.start_date.valueOf() === oldTask.start_date.valueOf()) {
+                if (oldTask.start_date && task.start_date && task.start_date.valueOf() === oldTask.start_date.valueOf()) {
                     return true;
                 }
             }
@@ -49592,17 +50194,21 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
                 }
             }
         }
+        var _processConstraints = function (taskId, oldTask) {
+            var newTask = gantt.getTask(taskId);
+            if (shouldKeepConstraints(newTask, oldTask)) {
+                // don't change constraints
+            }
+            else {
+                updateTaskConstraints(newTask);
+            }
+        };
         var _autoScheduleAfterDND = function (taskId, task) {
             if (gantt.config.auto_scheduling && !gantt._autoscheduling_in_progress) {
                 var newTask = gantt.getTask(taskId);
                 var progressScheduling = (gantt.config.auto_scheduling_use_progress && ((task.progress === 1) !== (newTask.progress === 1)));
                 if (_notEqualTaskDates(task, newTask)) {
-                    if (shouldKeepConstraints(newTask, task)) {
-                        // don't change constraints
-                    }
-                    else {
-                        updateTaskConstraints(newTask);
-                    }
+                    _processConstraints(taskId, task);
                     if (gantt.config.auto_scheduling_move_projects &&
                         // tslint:disable-next-line triple-equals
                         movedTask == taskId) {
@@ -49698,8 +50304,21 @@ function attachUIHandlers(gantt, linksBuilder, loopsFinder, connectedGroupsHelpe
             }
             return true;
         }
+        var draggedTask = {};
+        var timeout;
         gantt.attachEvent("onBeforeTaskChanged", function (id, mode, task) {
-            return _autoScheduleAfterDND(id, task);
+            _processConstraints(id, task);
+            draggedTask[id] = task;
+            return true;
+        });
+        // GS-499, GS-264 and GS-836. Autoschedule only after finishing dragging the task
+        gantt.attachEvent("onAfterTaskDrag", function (id, mode, e) {
+            if (id === movedTask) {
+                clearTimeout(timeout);
+                timeout = setTimeout(function () {
+                    _autoScheduleAfterDND(id, draggedTask[id]);
+                });
+            }
         });
         if (gantt.ext.inlineEditors) {
             gantt.ext.inlineEditors.attachEvent("onBeforeSave", function (state) {
@@ -50297,6 +50916,10 @@ module.exports = function (gantt) {
         return false;
       }
 
+      if (task.unscheduled) {
+        return false;
+      }
+
       if (this._cache[task.id] === undefined) {
         if (gantt.isSummaryTask(task)) {
           var hasCritical = false;
@@ -50477,7 +51100,7 @@ module.exports = function (gantt) {
 
         var task = tasksToDo[id];
 
-        if (this._isCompletedTask(task)) {
+        if (this._isCompletedTask(task) || task.unscheduled) {
           freeSlack[task.id] = 0;
         } else {
           freeSlack[task.id] = gantt.calculateDuration({
@@ -50902,6 +51525,27 @@ function default_1(gantt) {
     gantt.ext = gantt.ext || {};
     gantt.ext.export_api = gantt.ext.export_api || {
         _apiUrl: "https://export.dhtmlx.com/gantt",
+        getNodeJSTransport: function (url) {
+            var protocol = url.split("://")[0];
+            var module;
+            var defaultPort;
+            switch (protocol) {
+                case "https":
+                    module = __webpack_require__(/*! https */ "./node_modules/https-browserify/index.js");
+                    defaultPort = 443;
+                    break;
+                case "http":
+                    module = __webpack_require__(/*! http */ "./node_modules/stream-http/index.js");
+                    defaultPort = 80;
+                    break;
+                default:
+                    throw new Error("Unsupported protocol: " + protocol + ", url: " + url);
+            }
+            return {
+                module: module,
+                defaultPort: defaultPort
+            };
+        },
         _prepareConfigPDF: function (config, type) {
             if (config && config.raw) {
                 var previousDateRage = null;
@@ -51089,15 +51733,15 @@ function default_1(gantt) {
             return gantt.exportToMSProject(config);
         },
         _nodejsImportExcel: function (config) {
-            var http = __webpack_require__(/*! http */ "./node_modules/stream-http/index.js");
             // tslint:disable-next-line no-implicit-dependencies
             var formDataInstance = __webpack_require__(/*! form-data */ "./node_modules/form-data/lib/browser.js");
             var url = config.server || gantt.ext.export_api._apiUrl;
+            var network = gantt.ext.export_api.getNodeJSTransport(url);
             var parts1 = url.split("://")[1];
             var parts2 = parts1.split("/")[0].split(":");
             var parts3 = parts1.split("/");
             var hostname = parts2[0];
-            var port = parts2[1] || 80;
+            var port = parts2[1] || network.defaultPort;
             var path = "/" + parts3.slice(1).join("/");
             var options = {
                 hostname: hostname,
@@ -51115,7 +51759,7 @@ function default_1(gantt) {
                 sheet: config.sheet || 0
             }));
             options.headers["Content-Type"] = formData.getHeaders()["content-type"];
-            var req = http.request(options, function (res) {
+            var req = network.module.request(options, function (res) {
                 var resData = "";
                 res.on("data", function (d) {
                     resData += d;
@@ -51131,15 +51775,15 @@ function default_1(gantt) {
             formData.pipe(req);
         },
         _nodejsImportMSP: function (config) {
-            var http = __webpack_require__(/*! http */ "./node_modules/stream-http/index.js");
             // tslint:disable-next-line no-implicit-dependencies
             var formDataInstance = __webpack_require__(/*! form-data */ "./node_modules/form-data/lib/browser.js");
             var url = config.server || gantt.ext.export_api._apiUrl;
+            var network = gantt.ext.export_api.getNodeJSTransport(url);
             var parts1 = url.split("://")[1];
             var parts2 = parts1.split("/")[0].split(":");
             var parts3 = parts1.split("/");
             var hostname = parts2[0];
-            var port = parts2[1] || 80;
+            var port = parts2[1] || network.defaultPort;
             var path = "/" + parts3.slice(1).join("/");
             var options = {
                 hostname: hostname,
@@ -51160,7 +51804,7 @@ function default_1(gantt) {
             formData.append("type", config.type || "msproject-parse");
             formData.append("data", JSON.stringify(settings), options);
             options.headers["Content-Type"] = formData.getHeaders()["content-type"];
-            var req = http.request(options, function (res) {
+            var req = network.module.request(options, function (res) {
                 var resData = "";
                 res.on("data", function (d) {
                     resData += d;
@@ -51192,12 +51836,12 @@ function default_1(gantt) {
             }
         },
         _nodejsPostRequest: function (url, pack, cb) {
-            var http = __webpack_require__(/*! http */ "./node_modules/stream-http/index.js");
+            var network = gantt.ext.export_api.getNodeJSTransport(url);
             var parts1 = url.split("://")[1];
             var parts2 = parts1.split("/")[0].split(":");
             var parts3 = parts1.split("/");
             var hostname = parts2[0];
-            var port = parts2[1] || 80;
+            var port = parts2[1] || network.defaultPort;
             var path = "/" + parts3.slice(1).join("/");
             var options = {
                 hostname: hostname,
@@ -51209,7 +51853,7 @@ function default_1(gantt) {
                     "Content-Length": JSON.stringify(pack).length
                 }
             };
-            var req = http.request(options, function (res) {
+            var req = network.module.request(options, function (res) {
                 var resData = [];
                 res.on("data", function (d) {
                     resData.push(d);
@@ -51493,6 +52137,24 @@ function default_1(gantt) {
             var getDayIndex = gantt._day_index_by_date ? gantt._day_index_by_date : gantt.columnIndexByDate;
             copy.$start = getDayIndex.call(gantt, obj.start_date);
             copy.$end = getDayIndex.call(gantt, obj.end_date);
+            // GS-2100. Correct bar position considering hidden cells
+            var hiddenCells = 0;
+            var scaleCellsWidth = gantt.getScale().width;
+            if (scaleCellsWidth.indexOf(0) > -1) {
+                var i = 0;
+                for (i; i < copy.$start; i++) {
+                    if (!scaleCellsWidth[i]) {
+                        hiddenCells++;
+                    }
+                }
+                copy.$start -= hiddenCells;
+                for (i; i < copy.$end; i++) {
+                    if (!scaleCellsWidth[i]) {
+                        hiddenCells++;
+                    }
+                }
+                copy.$end -= hiddenCells;
+            }
             copy.$level = obj.$level;
             copy.$type = obj.$rendered_type;
             var tmps = gantt.templates;
@@ -55061,7 +55723,9 @@ module.exports = function (gantt) {
     if (!multiselect.isActive()) return true;
 
     if (multiselect._selected[id]) {
-      multiselect.unselect(id, null);
+      // GS-1057: don't unselect the task here because the task is already unselected 
+      // it was in the select.js file before it was deleted
+      // multiselect.unselect(id, null);
       multiselect._selected[id] = false;
       multiselect.setLastSelected(multiselect.getDefaultSelected());
     }
@@ -56570,7 +57234,7 @@ exports.Monitor = Monitor;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var MAX_UNDO_STEPS = 10;
+var MAX_UNDO_STEPS = 100;
 var Undo = /** @class */ (function () {
     function Undo(gantt) {
         var _this = this;
@@ -56847,11 +57511,12 @@ var GanttFactory = /** @class */ (function () {
             return gantt;
         };
         this._initFromConfig = function (gantt, initConfig) {
+            var _a;
             if (initConfig.plugins) {
                 for (var i in initConfig.plugins) {
                     var ext = _this._extensionsManager.getExtension(i);
                     if (ext) {
-                        ext(gantt);
+                        gantt.plugins((_a = {}, _a[i] = true, _a));
                     }
                 }
             }
@@ -56915,7 +57580,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 function DHXGantt() {
   this.constants = __webpack_require__(/*! ../constants */ "./sources/constants/index.js");
-  this.version = "8.0.4";
+  this.version = "8.0.7";
   this.license = "enterprise";
   this.templates = {};
   this.ext = {};
@@ -56953,6 +57618,7 @@ module.exports = function (supportedExtensions) {
   gantt.config = __webpack_require__(/*! ../core/common/config */ "./sources/core/common/config.ts")();
   gantt.ajax = __webpack_require__(/*! ../core/common/ajax */ "./sources/core/common/ajax.js")(gantt);
   gantt.date = __webpack_require__(/*! ../core/common/date */ "./sources/core/common/date.js")(gantt);
+  gantt.RemoteEvents = __webpack_require__(/*! ../core/remote/remote_events */ "./sources/core/remote/remote_events.js").remoteEvents;
 
   var dnd = __webpack_require__(/*! ../core/common/dnd */ "./sources/core/common/dnd.js")(gantt);
 
