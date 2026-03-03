@@ -1,21 +1,10 @@
-<<<<<<< HEAD
-// Type definitions for dhtmlxGantt 8.0.7
-=======
 // Type definitions for dhtmlxGantt 9.1.2
->>>>>>> upstream/master
 // Project: https://dhtmlx.com/docs/products/dhtmlxGantt
 
 type GanttCallback = (...args: any[]) => any;
 
 
-<<<<<<< HEAD
-export type GanttEventName = "onAfterAutoSchedule" | "onAfterBatchUpdate" | "onAfterBranchLoading" | "onAfterLightbox" | "onAfterLinkAdd" | "onAfterLinkDelete" | "onAfterLinkUpdate" | "onAfterQuickInfo" | "onAfterRedo" | "onAfterRowResize" | "onAfterSort" | "onAfterTaskAdd" | "onAfterTaskAutoSchedule" | "onAfterTaskDelete" | "onAfterTaskDrag" | "onAfterTaskMove" | "onAfterTaskUpdate" | "onAfterUndo" | "onAjaxError" | "onAutoScheduleCircularLink" | "onBeforeAutoSchedule" | "onBeforeBatchUpdate" | "onBeforeBranchLoading" | "onBeforeCollapse" | "onBeforeDataRender" | "onBeforeExpand" | "onBeforeGanttReady" | "onBeforeGanttRender" | "onBeforeLightbox" | "onBeforeLinkAdd" | "onBeforeLinkDelete" | "onBeforeLinkDisplay" | "onBeforeLinkUpdate" | "onBeforeMultiSelect" | "onBeforeParse" | "onBeforeRedo" | "onBeforeRedoStack" | "onBeforeRollupTaskDisplay" | "onBeforeRowDragEnd" | "onBeforeRowDragMove" | "onBeforeRowResize" | "onBeforeRowResizeEnd" | "onBeforeSplitTaskDisplay" | "onBeforeTaskAdd" | "onBeforeTaskAutoSchedule" | "onBeforeTaskChanged" | "onBeforeTaskDelete" | "onBeforeTaskDisplay" | "onBeforeTaskDrag" | "onBeforeTaskMove" | "onBeforeTaskMultiSelect" | "onBeforeTaskSelected" | "onBeforeTaskUpdate" | "onBeforeUndo" | "onBeforeUndoStack" | "onCircularLinkError" | "onClear" | "onCollapse" | "onColumnResize" | "onColumnResizeEnd" | "onColumnResizeStart" | "onContextMenu" | "onDataProcessorReady" | "onDataRender" | "onDestroy" | "onEmptyClick" | "onError" | "onExpand" | "onGanttLayoutReady" | "onGanttReady" | "onGanttRender" | "onGanttScroll" | "onGridHeaderClick" | "onGridResize" | "onGridResizeEnd" | "onGridResizeStart" | "onLightbox" | "onLightboxButton" | "onLightboxCancel" | "onLightboxChange" | "onLightboxDelete" | "onLightboxSave" | "onLinkClick" | "onLinkCreated" | "onLinkDblClick" | "onLinkIdChange" | "onLinkValidation" | "onLoadEnd" | "onLoadStart" | "onMouseMove" | "onMultiSelect" | "onOptionsLoad" | "onParse" | "onQuickInfo" | "onRowDragEnd" | "onRowDragStart" | "onRowResize" | "onScaleAdjusted" | "onScaleClick" | "onTaskClick" | "onTaskClosed" | "onTaskCreated" | "onTaskDblClick" | "onTaskDrag" | "onTaskIdChange" | "onTaskLoading" | "onTaskMultiSelect" | "onTaskOpened" | "onTaskRowClick" | "onTaskSelected" | "onTaskUnselected" | "onTemplatesReady";
-
-
-export interface GanttTemplates {
-=======
 export interface GanttEventCallback {
->>>>>>> upstream/master
 
 	/**
 	 * fires when autoscheduling is done
@@ -94,10 +83,7 @@ export interface GanttEventCallback {
 	 * fires after the user adds a task to the Gantt chart
 	 * @param id the task id
 	 * @param task the task object
-	 * @param column the name of the column that called the template
 	*/
-<<<<<<< HEAD
-=======
 	"onAfterTaskAdd"(id: string | number, task: Task): void;
 
 	/**
@@ -776,7 +762,6 @@ export interface GanttTemplates {
 	 * @param task the task object
 	 * @param column the name of the column that called the template
 	*/
->>>>>>> upstream/master
 	date_grid(date: Date, task: Task, column: string): string;
 
 	/**
@@ -795,11 +780,7 @@ export interface GanttTemplates {
 	 * @param to the id of the target task( 'null' or 'undefined', if the target task isn't specified yet)
 	 * @param to_start <i>true</i>, if the link is being dragged to the start of the target task, <i>false</i> - if <br> to the end of the task
 	*/
-<<<<<<< HEAD
-	drag_link_class(from: string | number, from_start: boolean, to: string | number, to_start: boolean): string;
-=======
 	drag_link_class(from: string | number, from_start: boolean, to: string | number, to_start: boolean): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * converts a date object to a date string. Used to send data back to the server
@@ -857,11 +838,7 @@ export interface GanttTemplates {
 	 * @param end the date when a task is scheduled to be completed
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	grid_row_class(start: Date, end: Date, task: Task): string;
-=======
 	grid_row_class(start: Date, end: Date, task: Task): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * defines the height of the filled area in the resourceHistogram
@@ -871,11 +848,7 @@ export interface GanttTemplates {
 	 * @param tasks tasks that are assigned to the specified resource and overlap start/end dates of the cell
 	 * @param assignments resource assignments that are assigned to the specified start/end dates of the task
 	*/
-<<<<<<< HEAD
-	histogram_cell_allocated(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): void;
-=======
 	histogram_cell_allocated(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): number | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the height of the line that defines the available capacity of the resource
@@ -885,11 +858,7 @@ export interface GanttTemplates {
 	 * @param tasks tasks that are assigned to the specified resource and overlap start/end dates of the cell
 	 * @param assignments resource assignments that are assigned to the specified start/end dates of the task
 	*/
-<<<<<<< HEAD
-	histogram_cell_capacity(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): void;
-=======
 	histogram_cell_capacity(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): number | void;
->>>>>>> upstream/master
 
 	/**
 	 * defines the CSS class which is applied to a cell of the resource panel
@@ -899,11 +868,7 @@ export interface GanttTemplates {
 	 * @param tasks tasks that are assigned to the specified resource and overlap start/end dates of the cell
 	 * @param assignments resource assignments that are assigned to the specified start/end dates of the task
 	*/
-<<<<<<< HEAD
-	histogram_cell_class(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): void;
-=======
 	histogram_cell_class(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * defines the label inside a cell
@@ -913,21 +878,13 @@ export interface GanttTemplates {
 	 * @param tasks tasks that are assigned to the specified resource and overlap start/end dates of the cell
 	 * @param assignments resource assignments that are assigned to the specified start/end dates of the task
 	*/
-<<<<<<< HEAD
-	histogram_cell_label(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): void;
-=======
 	histogram_cell_label(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): string | number | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the CSS class that will be applied to a link
 	 * @param link the link object
 	*/
-<<<<<<< HEAD
-	link_class(link: Link): string;
-=======
 	link_class(link: Link): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the text in the header of the link's "delete" confirm window
@@ -947,11 +904,7 @@ export interface GanttTemplates {
 	 * @param end the date when a task is scheduled to be completed
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	progress_text(start: Date, end: Date, task: Task): string;
-=======
 	progress_text(start: Date, end: Date, task: Task): string | number | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the CSS class that will be applied to  the pop-up edit form
@@ -959,11 +912,7 @@ export interface GanttTemplates {
 	 * @param end the date when a task is scheduled to be completed
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	quick_info_class(start: Date, end: Date, task: Task): void;
-=======
 	quick_info_class(start: Date, end: Date, task: Task): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the content of the pop-up edit form
@@ -987,11 +936,7 @@ export interface GanttTemplates {
 	 * @param end the date when a task is scheduled to be completed
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	quick_info_title(start: Date, end: Date, task: Task): string;
-=======
 	quick_info_title(start: Date, end: Date, task: Task): string | number | void;
->>>>>>> upstream/master
 
 	/**
 	 * defines the CSS class names of cells in the resource timeline cells
@@ -1001,11 +946,7 @@ export interface GanttTemplates {
 	 * @param tasks tasks that are assigned to specified resource and overlap start/end dates of the cell
 	 * @param assignments resource assignments that are assigned to the specified start/end dates of the task
 	*/
-<<<<<<< HEAD
-	resource_cell_class(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): string;
-=======
 	resource_cell_class(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * defines the HTML content of resource timeline cells
@@ -1015,11 +956,7 @@ export interface GanttTemplates {
 	 * @param tasks tasks that are assigned to specified resource and overlap start/end dates of the cell
 	 * @param assignments resource assignments that are assigned to the specified start/end dates of the task
 	*/
-<<<<<<< HEAD
-	resource_cell_value(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): string;
-=======
 	resource_cell_value(start_date: Date, end_date: Date, resource: any, tasks: Array<Task>, assignments: any[]): string | number | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the CSS class that will be applied to cells of the time scale of the timeline area
@@ -1031,11 +968,7 @@ export interface GanttTemplates {
 	 * specifies the CSS class that will be applied to the time scale
 	 * @param scale the scale's configuration object
 	*/
-<<<<<<< HEAD
-	scale_row_class(scale: Scale): string;
-=======
 	scale_row_class(scale: Scale): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the CSS class that will be applied to task bars
@@ -1043,11 +976,7 @@ export interface GanttTemplates {
 	 * @param end the date when a task is scheduled to be completed
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	task_class(start: Date, end: Date, task: Task): string;
-=======
 	task_class(start: Date, end: Date, task: Task): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the date format of the label in the 'Time period' section of the lightbox
@@ -1067,11 +996,7 @@ export interface GanttTemplates {
 	 * @param end the date when a task is scheduled to be completed
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	task_row_class(start: Date, end: Date, task: Task): string;
-=======
 	task_row_class(start: Date, end: Date, task: Task): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the text in the task bars and the header of the lightbox
@@ -1079,11 +1004,7 @@ export interface GanttTemplates {
 	 * @param end the date when a task is scheduled to be completed
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	task_text(start: Date, end: Date, task: Task): string;
-=======
 	task_text(start: Date, end: Date, task: Task): string | number | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the date period in the header of the lightbox
@@ -1097,11 +1018,7 @@ export interface GanttTemplates {
 	 * specifies the dates of unscheduled tasks
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	task_unscheduled_time(task: Task): void;
-=======
 	task_unscheduled_time(task: Task): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the format of the drop-down time selector in the lightbox
@@ -1114,22 +1031,14 @@ export interface GanttTemplates {
 	 * @param item either the task's or resource's object assigned to the row
 	 * @param date the date of a cell
 	*/
-<<<<<<< HEAD
-	timeline_cell_class(item: any, date: Date): string;
-=======
 	timeline_cell_class(item: any, date: Date): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies custom HTML content in the timeline cells
 	 * @param task the task's object
 	 * @param date the date of a cell
 	*/
-<<<<<<< HEAD
-	timeline_cell_content(task: Task, date: Date): string;
-=======
 	timeline_cell_content(task: Task, date: Date): string | number | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the format of start and end dates displayed in the tooltip
@@ -1143,23 +1052,7 @@ export interface GanttTemplates {
 	 * @param end the date when a task is scheduled to be completed
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	tooltip_text(start: Date, end: Date, task: Task): string;
-
-	/**
-	 * a string from an XML file is converted into a date object in conformity with this template
-	 * @param date the date which needs formatting
-	*/
-	xml_date(date: Date): string;
-
-	/**
-	 * a date object is converted into a string in conformity with this template. Used to send data back to the server
-	 * @param date the date which needs formatting
-	*/
-	xml_format(date: Date): string;
-=======
 	tooltip_text(start: Date, end: Date, task: Task): string | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the text assigned to tasks bars on the right side
@@ -1167,11 +1060,7 @@ export interface GanttTemplates {
 	 * @param end the date when a task is scheduled to be completed
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	rightside_text(start: Date, end: Date, task: Task): string;
-=======
 	rightside_text(start: Date, end: Date, task: Task): string | number | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the text assigned to tasks bars on the left side
@@ -1179,11 +1068,7 @@ export interface GanttTemplates {
 	 * @param end the date when a task is scheduled to be completed
 	 * @param task the task object
 	*/
-<<<<<<< HEAD
-	leftside_text(start: Date, end: Date, task: Task): string;
-=======
 	leftside_text(start: Date, end: Date, task: Task): string | number | void;
->>>>>>> upstream/master
 
 	/**
 	 * specifies the lightbox's header
@@ -1208,11 +1093,6 @@ export interface GanttConfigOptions {
 	 * enables auto scheduling
 	*/
 	auto_scheduling: boolean | AutoSchedulingConfig;
-
-	/**
-	 * disables usage of time contraints for tasks
-	*/
-	auto_scheduling_compatibility: boolean;
 
 	/**
 	 * disables usage of time contraints for tasks
@@ -1285,8 +1165,6 @@ export interface GanttConfigOptions {
 	bar_height: number | string;
 
 	/**
-<<<<<<< HEAD
-=======
 	 * adjusts the padding around task bars in the timeline when `bar_height` is set to "full"
 	*/
 	bar_height_padding: number;
@@ -1297,7 +1175,6 @@ export interface GanttConfigOptions {
 	baselines: BaselineConfig | boolean;
 
 	/**
->>>>>>> upstream/master
 	 * enables dynamic loading in the Gantt chart
 	*/
 	branch_loading: boolean;
@@ -1330,11 +1207,7 @@ export interface GanttConfigOptions {
 	/**
 	 * enables advanced drag-n-drop
 	*/
-<<<<<<< HEAD
-	click_drag: ClickDrag;
-=======
 	click_drag: undefined | ClickDrag;
->>>>>>> upstream/master
 
 	/**
 	 * configures the columns of the table
@@ -1374,16 +1247,6 @@ export interface GanttConfigOptions {
 	container_resize_timeout: number;
 
 	/**
-	 * defines whether the gantt should track resizing of the container at time intervals
-	*/
-	container_resize_method: string | undefined;
-
-	/**
-	 * specifies the delay (in milliseconds) before redrawing the gantt when resizing the container
-	*/
-	container_resize_timeout: number;
-
-	/**
 	 * enables adjusting the task's start and end dates to the work time (while dragging)
 	*/
 	correct_work_time: boolean;
@@ -1407,11 +1270,6 @@ export interface GanttConfigOptions {
 	 * enables or disables the display of deadline elements for tasks
 	*/
 	deadlines: boolean;
-
-	/**
-	 * defines whether gantt will perform a deep copy of data objects passed into the gantt.parse() method
-	*/
-	deepcopy_on_parse: boolean;
 
 	/**
 	 * defines whether gantt will perform a deep copy of data objects passed into the gantt.parse() method
@@ -1479,10 +1337,6 @@ export interface GanttConfigOptions {
 
 	/**
 	 * configures the behavior of the drag_timeline extension
-<<<<<<< HEAD
-	*/
-	drag_timeline: any;
-=======
 	 * @param CSS selector. Scrolling the timeline won't be activated for the elements that match the selector
 	 * @param if the property is specified, scrolling the timeline will be activated only when the specified modifier key is pressed. The supported values are: "ctrlKey", "shiftKey", "metaKey", "altKey"
 	 * @param if the property is enabled, scrolling the timeline will be rerendered when the scroll is started and when it is ended
@@ -1492,7 +1346,6 @@ export interface GanttConfigOptions {
 		useKey?: string | boolean,
 		render?: boolean
 	}
->>>>>>> upstream/master
 
 	/**
 	 * sets the number of 'gantt.config.duration_unit' units that will correspond to one  unit of the 'duration' data property.
@@ -1541,10 +1394,6 @@ export interface GanttConfigOptions {
 
 	/**
 	 * renders an external component into the DOM
-<<<<<<< HEAD
-	*/
-	external_render: any;
-=======
 	 * @param an object that is returned by the **onrender* function.
 	 * @param an object that is returned by the **onrender* function.
 	 * @param a DOM element the native component will be attached to.
@@ -1553,7 +1402,6 @@ export interface GanttConfigOptions {
 		isElement(element: any): boolean,
 		renderElement(element: any, container: HTMLElement): void
 	}
->>>>>>> upstream/master
 
 	/**
 	 * 'says' the Gantt chart to automatically extend the time scale in order to fit all displayed tasks
@@ -1562,14 +1410,6 @@ export interface GanttConfigOptions {
 
 	/**
 	 * adjusts the width of columns inside a scrollable grid
-<<<<<<< HEAD
-	*/
-	grid_elastic_columns: boolean | string;
-
-	/**
-	 * makes the grid resizable by dragging the right grid's border
-=======
->>>>>>> upstream/master
 	*/
 	grid_elastic_columns: boolean | string;
 
@@ -1758,12 +1598,6 @@ export interface GanttConfigOptions {
 	process_resource_assignments: boolean;
 
 	/**
-<<<<<<< HEAD
-	 * enables/disables parsing of the resource assignments
-	*/
-	process_resource_assignments: boolean;
-
-	/**
 	 * specifies the end date of a project
 	*/
 	project_end: Date | undefined;
@@ -1771,15 +1605,6 @@ export interface GanttConfigOptions {
 	/**
 	 * specifies the start date of a project
 	*/
-=======
-	 * specifies the end date of a project
-	*/
-	project_end: Date | undefined;
-
-	/**
-	 * specifies the start date of a project
-	*/
->>>>>>> upstream/master
 	project_start: Date | undefined;
 
 	/**
@@ -1809,35 +1634,10 @@ export interface GanttConfigOptions {
 
 	/**
 	 * enables the possibility to reorder grid columns by drag and drop
-<<<<<<< HEAD
 	*/
 	reorder_grid_columns: boolean;
 
 	/**
-	 * enables the ability to adjust the row height by drag-and-drop
-	*/
-	resize_rows: boolean;
-
-	/**
-	 * specifies the name of the dataStore which stores resource assignments
-	*/
-	resource_assignment_store: string;
-
-	/**
-	 * changes the name of the attribute that Gantt uses to find which resource the task row in the resource grid/timeline is referring to
-	*/
-	resource_attribute: string;
-
-	/**
-	 * defines a set of working calendars that can be assigned to a specific resource, e.g. a user
-=======
->>>>>>> upstream/master
-	*/
-	reorder_grid_columns: boolean;
-
-	/**
-<<<<<<< HEAD
-=======
 	 * enables the ability to adjust the row height by drag-and-drop
 	*/
 	resize_rows: boolean;
@@ -1861,7 +1661,6 @@ export interface GanttConfigOptions {
 	}
 
 	/**
->>>>>>> upstream/master
 	 * defines the property of a task object that stores a resource id associated with resourceGrid/Timeline/Histogram/Calendar
 	*/
 	resource_property: string;
@@ -1878,10 +1677,6 @@ export interface GanttConfigOptions {
 
 	/**
 	 * defines an extra configuration for the resource store
-<<<<<<< HEAD
-	*/
-	resources: any;
-=======
 	 * @param defines whether modified resource assignments can be sent to the DataProcessor as separate entries with persistent IDs
 	 * @param defines whether modified resource objects can be sent to the DataProcessor as separate entries with persistent IDs
 	 * @param defines whether resource assignments will be editable in the resource diagram
@@ -1905,7 +1700,6 @@ export interface GanttConfigOptions {
 		},
 		lightbox_resources?(resourceArray: any): any
 	}
->>>>>>> upstream/master
 
 	/**
 	 * sets the id of the virtual root element
@@ -1943,14 +1737,6 @@ export interface GanttConfigOptions {
 	scales: Scales;
 
 	/**
-<<<<<<< HEAD
-	 * defines configuration settings of the time scale
-	*/
-	scales: Scale[];
-
-	/**
-=======
->>>>>>> upstream/master
 	 * enables backward scheduling
 	*/
 	schedule_from_end: boolean;
@@ -2067,23 +1853,8 @@ export interface GanttConfigOptions {
 
 	/**
 	 * enables rendering of highlighted cells in the static_background mode
-<<<<<<< HEAD
 	*/
 	static_background_cells: boolean;
-
-	/**
-	 * sets the step of the time scale (X-Axis)
-	*/
-	step: number;
-
-	/**
-	 * specifies the second time scale(s) (deprecated)
-	*/
-	subscales: any[];
-=======
-	*/
-	static_background_cells: boolean;
->>>>>>> upstream/master
 
 	/**
 	 * sets the name of the attribute that will specify the id of the task's HTML element
@@ -2097,18 +1868,8 @@ export interface GanttConfigOptions {
 
 	/**
 	 * sets the name of the attribute of the resizer's DOM element of the grid row. The attribute presents the row's index
-<<<<<<< HEAD
 	*/
 	task_grid_row_resizer_attribute: string;
-
-	/**
-	 * sets the height of task bars in the timeline area
-	*/
-	task_height: number | string;
-=======
-	*/
-	task_grid_row_resizer_attribute: string;
->>>>>>> upstream/master
 
 	/**
 	 * sets the offset (in pixels) of the nearest task from the left border in the timeline
@@ -2232,10 +1993,6 @@ export interface GanttConfigOptions {
 
 	/**
 	 * specifies the speed of scrolling the gantt by the mouse wheel
-<<<<<<< HEAD
-	*/
-	wheel_scroll_sensitivity: any;
-=======
 	 * @param the horizontal speed
 	 * @param the vertical speed
 	*/
@@ -2243,7 +2000,6 @@ export interface GanttConfigOptions {
 		x?: number,
 		y?: number
 	}
->>>>>>> upstream/master
 
 	/**
 	 * sets both the section and its label on the same line
@@ -2255,14 +2011,6 @@ export interface GanttConfigOptions {
 	*/
 	work_time: boolean;
 
-<<<<<<< HEAD
-	/**
-	 * defines date formats that are used to parse data from a data set and to send data to a server
-	*/
-	xml_date: string;
-
-=======
->>>>>>> upstream/master
 	[customConfig: string]: any;
 }
 
@@ -2293,11 +2041,8 @@ export interface GanttLocaleLabels {
 	section_description: string;
 	section_time: string;
 	section_type: string;
-<<<<<<< HEAD
-=======
 	section_deadline: string;
 	section_baselines: string;
->>>>>>> upstream/master
 
 	/* grid columns */
 	column_wbs: string;
@@ -2366,10 +2111,7 @@ export interface GanttPlugins {
 	marker?: boolean;
 	multiselect?: boolean;
 	overlay?: boolean;
-<<<<<<< HEAD
-=======
 	export_api?: boolean;
->>>>>>> upstream/master
 }
 
 export interface GanttInitializationConfig {
@@ -2384,11 +2126,7 @@ export interface GanttInitializationConfig {
 
 export interface GanttInternationalization {
 	setLocale(locale: any): void;
-<<<<<<< HEAD
-	getLocale(language?: string): GanttLocale;
-=======
 	getLocale(language: string): GanttLocale;
->>>>>>> upstream/master
 	addLocale(language: string, locale: GanttLocale): void;
 }
 export type GanttPlugin = (gantt: GanttStatic) => void;
@@ -2447,8 +2185,6 @@ export interface GanttStatic {
 	ext: Ext;
 
 	/**
-<<<<<<< HEAD
-=======
 	 * an object of the lightbox controls
 	 * @param the [Checkbox](desktop/checkbox.md) control
 	 * @param the [Constraint](desktop/constraint.md) control
@@ -2483,7 +2219,6 @@ export interface GanttStatic {
 	}
 
 	/**
->>>>>>> upstream/master
 	 * a set of methods for Gantt chart localization
 	*/
 	i18n: GanttInternationalization;
@@ -2593,11 +2328,7 @@ export interface GanttStatic {
 	 * adds a calendar into Gantt
 	 * @param calendar an object with configuration of the calendar
 	*/
-<<<<<<< HEAD
-	addCalendar(calendar: any): string;
-=======
 	addCalendar(calendar: CalendarConfig): string;
->>>>>>> upstream/master
 
 	/**
 	 * adds a new dependency link
@@ -2631,11 +2362,7 @@ export interface GanttStatic {
 	 * @param parent optional, the parent's id
 	 * @param index optional, the position the task will be added into (0 or greater)
 	*/
-<<<<<<< HEAD
-	addTask(task: any, parent?: string | number, index?: number): string | number;
-=======
 	addTask(task: NewTask, parent?: string | number, index?: number): string | number;
->>>>>>> upstream/master
 
 	/**
 	 * displays an additional layer with custom elements for a task in the timeline area
@@ -2668,12 +2395,7 @@ export interface GanttStatic {
 	 * @param handler the handler function
 	 * @param settings optional, an <a href="#propertiesofsettingsobject">object with settings</a> for the event handler
 	*/
-<<<<<<< HEAD
-	attachEvent(name: GanttEventName, handler: GanttCallback, settings?: any): string;
-
-=======
 	attachEvent<T extends keyof GanttEventCallback>(event: T, handler: GanttEventCallback[T], settings?: HandlerSettings): string
->>>>>>> upstream/master
 	/**
 	 * recalculates the schedule of the project
 	 * @param taskId optional, the task id
@@ -2813,11 +2535,7 @@ export interface GanttStatic {
 	 * creates a datastore according to the provided configuration
 	 * @param config a configuration object of a datastore
 	*/
-<<<<<<< HEAD
-	createDatastore(config: any): DatastoreMethods & TreeDatastoreMethods;
-=======
 	createDatastore(config: DatastoreConfig): DatastoreMethods & TreeDatastoreMethods;
->>>>>>> upstream/master
 
 	/**
 	 * adds a new task and opens the lightbox to confirm
@@ -2825,11 +2543,7 @@ export interface GanttStatic {
 	 * @param parent optional, the parent's id
 	 * @param index optional, the position the task will be added into (0 or greater)
 	*/
-<<<<<<< HEAD
-	createTask(task?: any, parent?: string | number, index?: number): string | number;
-=======
 	createTask(task?: NewTask, parent?: string | number, index?: number): string | number;
->>>>>>> upstream/master
 
 	/**
 	 * dataProcessor constructor
@@ -2879,14 +2593,6 @@ export interface GanttStatic {
 	destructor(): void;
 
 	/**
-<<<<<<< HEAD
-	 * detaches all events from dhtmlxGantt (both custom and inner ones)
-	*/
-	detachAllEvents(): void;
-
-	/**
-=======
->>>>>>> upstream/master
 	 * detaches a handler from an event (which was attached before by the attachEvent() method)
 	 * @param id the event's id
 	*/
@@ -2921,11 +2627,7 @@ export interface GanttStatic {
 	 * @param handler the event handler
 	 * @param options optional, the value of either the <i>useCapture</i> or <i>options</i> parameter. <a href="https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener">Read details</a>
 	*/
-<<<<<<< HEAD
-	event(node: HTMLElement | string, event: string, handler: GanttCallback, options?: any): void;
-=======
 	event(node: HTMLElement | string, event: string, handler: GanttCallback, options?: boolean | HandlerSettings): void;
->>>>>>> upstream/master
 
 	/**
 	 * removes an event handler from an HTML element
@@ -2934,11 +2636,7 @@ export interface GanttStatic {
 	 * @param handler the event handler
 	 * @param options optional, the value of either the <i>useCapture</i> or <i>options</i> parameter. <a href="https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener">Read details</a>
 	*/
-<<<<<<< HEAD
-	eventRemove(node: HTMLElement | string, event: string, handler: GanttCallback, options?: any): void;
-=======
 	eventRemove(node: HTMLElement | string, event: string, handler: GanttCallback, options?: boolean | HandlerSettings): void;
->>>>>>> upstream/master
 
 	/**
 	 * expands gantt to the full screen mode
@@ -3067,11 +2765,7 @@ export interface GanttStatic {
 	 * gets the configuration object of a column
 	 * @param name the column's name
 	*/
-<<<<<<< HEAD
-	getGridColumn(name: string | number): any;
-=======
 	getGridColumn(name: string | number): GridColumn;
->>>>>>> upstream/master
 
 	/**
 	 * gets columns of the Gantt chart
@@ -3105,11 +2799,7 @@ export interface GanttStatic {
 	 * returns the object of the lightbox's section
 	 * @param name the name of the section
 	*/
-<<<<<<< HEAD
-	getLightboxSection(name: string | number): any;
-=======
 	getLightboxSection(name: string | number): LightboxSectionState;
->>>>>>> upstream/master
 
 	/**
 	 * returns the name of the active lighbox's structure
@@ -3189,11 +2879,7 @@ export interface GanttStatic {
 	 * @param resourceId the id of the resource
 	 * @param taskId the id of the task
 	*/
-<<<<<<< HEAD
-	getResourceAssignments(resourceId: string | number, taskId?: string | number): any[];
-=======
 	getResourceAssignments(resourceId: string | number, taskId?: string | number): ResourceAssignment[];
->>>>>>> upstream/master
 
 	/**
 	 * returns a calendar which the resource is assigned to
@@ -3233,16 +2919,6 @@ export interface GanttStatic {
 	 * @param id the task id
 	*/
 	getSiblings(id: string | number): any[];
-<<<<<<< HEAD
-
-	/**
-	 * checks how much time (in the current duration unit) a task has before it starts to affect other tasks
-	 * @param task1 the object of the 1st task to check the slack for
-	 * @param task2 the object of the 2nd task to check the slack for
-	*/
-	getSlack(task1: any, task2: any): number | string;
-=======
->>>>>>> upstream/master
 
 	/**
 	 * gets the current state of the Gantt chart
@@ -3271,26 +2947,19 @@ export interface GanttStatic {
 	 * returns the parsed resource assignments of a specific task from the datastore
 	 * @param taskId the task id
 	*/
-<<<<<<< HEAD
-	getTaskAssignments(taskId: string | number): any[];
-=======
 	getTaskAssignments(taskId: string | number): ResourceAssignment[];
->>>>>>> upstream/master
 
 	/**
 	 * returns the height (in pixels) of the DOM element of the task
 	 * @param taskId the task's id
 	*/
 	getTaskBarHeight(taskId: number | string): number;
-<<<<<<< HEAD
-=======
 
 	/**
 	 * returns an array of baselines of a specific task from the datastore
 	 * @param taskId the task id
 	*/
 	getTaskBaselines(taskId: string | number): Baseline[];
->>>>>>> upstream/master
 
 	/**
 	 * finds a task by the specified criteria
@@ -3298,11 +2967,7 @@ export interface GanttStatic {
 	 * @param propertyValue the property value
 	 * @param types an object with types of the tasks which should be returned
 	*/
-<<<<<<< HEAD
-	getTaskBy(propertyName: string | GanttCallback, propertyValue?: string | number | any[], types?: any): Array<Task>;
-=======
 	getTaskBy(propertyName: string | GanttCallback, propertyValue?: string | number | boolean | any[], types?: any): Array<Task>;
->>>>>>> upstream/master
 
 	/**
 	 * returns a task by its global task index
@@ -3359,15 +3024,12 @@ export interface GanttStatic {
 	 * @param to optional, the end date of the item
 	*/
 	getTaskPosition(task: Task, from?: Date, to?: Date): any;
-<<<<<<< HEAD
-=======
 
 	/**
 	 * returns the array of unique resources assigned to a specific task from the datastore
 	 * @param taskId the task id
 	*/
 	getTaskResources(taskId: string | number): ResourceItem[];
->>>>>>> upstream/master
 
 	/**
 	 * returns the HTML element of the task row in the table
@@ -3573,16 +3235,10 @@ export interface GanttStatic {
 
 	/**
 	 * merges several working calendars into one
-<<<<<<< HEAD
-	 * @param calendars an array of calendars' objects
-	*/
-	mergeCalendars(calendars: any[]): void;
-=======
 	 * @param calendars an array of calendars' objects or the first calendar object
 	 * @param calendar2 optional, the second calendar object
 	*/
 	mergeCalendars(calendars: Calendar[] | Calendar, calendar2?: Calendar): void;
->>>>>>> upstream/master
 
 	/**
 	 * calls a message box of the specified type
@@ -3596,11 +3252,7 @@ export interface GanttStatic {
 	 * @param source the source object
 	 * @param force optional, if true, properties of the 'source' will overwrite matching properties of the 'target', if there are any. If false (by default), properties that already exist in the 'target' will be omitted
 	*/
-<<<<<<< HEAD
-	mixin(target: any, source: any, force?: boolean): void;
-=======
 	mixin(target: CustomObject, source: CustomObject, force?: boolean): void;
->>>>>>> upstream/master
 
 	/**
 	 * calls a modalbox
@@ -3627,15 +3279,6 @@ export interface GanttStatic {
 	 * @param data a string or object which represents <a href="https://docs.dhtmlx.com/gantt/desktop__loading.html#dataproperties">data</a>
 	 * @param type optional, (<i>'json', 'xml'</i>) the data type. The default value - <i>'json'</i>
 	*/
-<<<<<<< HEAD
-	parse(data: any, type?: string): void;
-
-	/**
-	 * activates specified extensions
-	 * @param ext an object with extension names that need to be activated
-	*/
-	plugins(ext: any): void;
-=======
 	parse(data: string | DataToLoad1 | DataToLoad2, type?: string): void;
 
 	/**
@@ -3643,7 +3286,6 @@ export interface GanttStatic {
 	 * @param ext an object with the extensions' names that need to be activated
 	*/
 	plugins(ext?: GanttPlugins): GanttPlugins;
->>>>>>> upstream/master
 
 	/**
 	 * gets the relative horizontal position of the specified date in the chart area
@@ -3733,11 +3375,7 @@ export interface GanttStatic {
 	 * rounds the specified date to the nearest date in the time scale
 	 * @param date the Date object to round or an object with settings
 	*/
-<<<<<<< HEAD
-	roundDate(date: any): Date;
-=======
 	roundDate(date: Date | RoundDateConfig): Date;
->>>>>>> upstream/master
 
 	/**
 	 * rounds the start and end task's dates to the nearest dates in the time scale
@@ -3748,25 +3386,15 @@ export interface GanttStatic {
 	/**
 	 * scrolls the layout view to the specified position
 	 * @param name the name of the layout view
-<<<<<<< HEAD
-	 * @param x optional, value of horizontal scroll or 'null' (if the scroll position shouldn't be changed)
-	 * @param y optional, value of vertical scroll or 'null' (if the scroll position shouldn't be changed)
-=======
 	 * @param x optional, the value of the horizontal scroll or 'null' (if the scroll position shouldn't be changed)
 	 * @param y optional, the value of the vertical scroll or 'null' (if the scroll position shouldn't be changed)
->>>>>>> upstream/master
 	*/
 	scrollLayoutCell(name: string, x: number | null, y: number | null): void;
 
 	/**
 	 * scrolls the Gantt container to the specified position
-<<<<<<< HEAD
-	 * @param x optional, value of horizontal scroll or 'null' (if the scroll position shouldn't be changed)
-	 * @param y optional, value of vertical scroll or 'null' (if the scroll position shouldn't be changed)
-=======
 	 * @param x optional, the value of the horizontal scroll or 'null' (if the scroll position shouldn't be changed)
 	 * @param y optional, the value of the vertical scroll or 'null' (if the scroll position shouldn't be changed)
->>>>>>> upstream/master
 	*/
 	scrollTo(x?: number | null, y?: number | null): void;
 
@@ -3856,21 +3484,13 @@ export interface GanttStatic {
 	 * @param parent the id of the parent task. Specify the parameter if you want to sort tasks only in the branch of the specified parent.
 	 * @param silent specifies whether rendering should be invoked after reordering items
 	*/
-<<<<<<< HEAD
-	sort(field: string | GanttCallback, desc?: boolean, parent?: string | number, silent?: boolean): void;
-=======
 	sort(field: string | ((task1: Task, task2: Task) => 1 | 0 | -1), desc?: boolean, parent?: string | number, silent?: boolean): void;
->>>>>>> upstream/master
 
 	/**
 	 * selects the specified task if it was unselected and vice versa
 	 * @param taskId the task's id
 	*/
-<<<<<<< HEAD
-	toggleTaskSelection(task: string | number): void;
-=======
 	toggleTaskSelection(taskId: string | number): void;
->>>>>>> upstream/master
 
 	/**
 	 * returns a unique id
@@ -3927,8 +3547,6 @@ export interface GanttStatic {
 	updateTaskAssignments(taskId: number | string): void;
 }
 
-<<<<<<< HEAD
-=======
 export interface CustomTypeRenderers {
 
 	/**
@@ -4159,7 +3777,6 @@ export interface AdditionalLinkLayer {
 	}
 }
 
->>>>>>> upstream/master
 export interface Task {
 
 	/**
@@ -4193,14 +3810,11 @@ export interface Task {
 	bar_height?: number,
 
 	/**
-<<<<<<< HEAD
-=======
 	 * An array with the baselines
 	*/
 	baselines?: Baseline[],
 
 	/**
->>>>>>> upstream/master
 	 * Sets the id of the custom calendar to be assigned to the task. The name of the property depends on the value of the calendar_property option
 	*/
 	calendar_id?: number | string,
@@ -4221,14 +3835,11 @@ export interface Task {
 	constraint_type?: string,
 
 	/**
-<<<<<<< HEAD
-=======
 	 * Specifies the deadline date for the task. A [visual indicator](desktop/inbuilt_baselines.md#deadlinesandconstraints) is displayed in the timeline when this property is set.
 	*/
 	deadline?: Date,
 
 	/**
->>>>>>> upstream/master
 	 * Defines whether the task can be editable in the read-only Gantt chart. The name of the property depends on the value of the editable_property option
 	*/
 	editable?: boolean,
@@ -4299,8 +3910,6 @@ export interface Task {
 	row_height?: number,
 
 	/**
-<<<<<<< HEAD
-=======
 	 * Defines how split task must be displayed. The available values are:
 		"inline" - subtask is always displayed in the same row as the parent task.
 		"subrow" - subtask is always displayed its own row (like a regular subtask) under it's `render:"split"` parent.
@@ -4310,7 +3919,6 @@ export interface Task {
 	split_placement?: "inline" | "subrow" | "auto" | null | undefined,
 
 	/**
->>>>>>> upstream/master
 	 * The id of the target task. The property displays the same value as the $drop_target property. The property is added to the task object only if Data Processor is enabled, after the task is updated and data is sent to the server.
 	*/
 	target?: string,
@@ -4329,16 +3937,9 @@ export interface Task {
 	 * the task type. The available values are stored in the api/gantt_types_config.md object:
 				"task" -  a regular task (default value).
 				"project" -  a task that starts, when its earliest child task starts, and ends, when its latest child ends. 
-<<<<<<< HEAD
-								The start_date, end_date, duration properties are ignored for such tasks. 
-							 	
-				"milestone" -  a zero-duration task that is used to mark out important dates of the project.
-								 The duration, progress, end_date properties are ignored for such tasks.
-=======
 				The start_date, end_date, duration properties are ignored for such tasks. 
 				"milestone" -  a zero-duration task that is used to mark out important dates of the project.
 				The duration, progress, end_date properties are ignored for such tasks.
->>>>>>> upstream/master
 	*/
 	type?: string,
 
@@ -4348,8 +3949,6 @@ export interface Task {
 	unscheduled?: boolean,
 
 	/**
-<<<<<<< HEAD
-=======
 	 * A computed end date of the project task from its subtasks. Added and updated when "auto_scheduling" is disabled.
 	*/
 	$auto_end_date?: Date,
@@ -4360,7 +3959,6 @@ export interface Task {
 	$auto_start_date?: Date,
 
 	/**
->>>>>>> upstream/master
 	 * A system property that is used in internal calculations.
 	*/
 	$calculate_duration?: boolean,
@@ -4539,37 +4137,6 @@ export interface Link {
 
 }
 
-<<<<<<< HEAD
-export interface Scale {
-
-	/**
-	 * the name of the scale unit. The available values are: "minute", "hour", "day" (default), "week", "quarter", "month", "year".
-	*/
-	unit: string,
-
-	/**
-	 * the step of the time scale (X-Axis), 1 by default.
-	*/
-	step?: number,
-
-	/**
-	 * a function that returns the name of a CSS class that will be applied to the scale units. Takes a date object as a parameter.
-	 * @param a date that will be checked
-	*/
-	css?(date: Date): any,
-
-	/**
-	 * the format of the scale's labels. If set as a function, expects a date object as a parameter.
-	 * @param a date that will be converted
-	*/
-	format?: string | ((date: Date,) => any),
-
-	/**
-	 * the format of the scale's labels. If set as a function, expects a date object as a parameter.
-	 * @param a date that will be converted
-	*/
-	date?: string | ((date: Date,) => any)
-=======
 export interface Baseline {
 
 	/**
@@ -4687,7 +4254,6 @@ export interface ResourceAssignment {
 	 * any custom property
 	*/
 	[customProperty: string]: any
->>>>>>> upstream/master
 }
 
 export interface GridColumn {
@@ -4705,11 +4271,7 @@ export interface GridColumn {
 	/**
 	 * specifies the title of the column
 	*/
-<<<<<<< HEAD
-	label?: string | number,
-=======
 	label?: string | number | any,
->>>>>>> upstream/master
 
 	/**
 	 * sets the maximum column width in case of resize operations
@@ -4773,21 +4335,13 @@ export interface GridColumn {
 	onrender?(task: Task, node: HTMLElement): any,
 
 	/**
-<<<<<<< HEAD
-	 * sort configuration after clicking on the column header. When it is set to *false*, sorting is disabled. Otherwise you can set a different task property in the *string* to sort the column or use a custom sorting function
-	 * @param the first task that will be sorted
-	 * @param the second task that will be sorted
-=======
 	 * the configuration of sorting after clicking on the column header. When the property is set to *false*, sorting is disabled. You can also set a different task property in the *string* to sort the column or use a custom sorting function:
 	 * @param an object of the first task that will be sorted
 	 * @param an object of the second task that will be sorted
->>>>>>> upstream/master
 	*/
 	sort?: boolean | string | ((task1: Task, task2: Task,) => any)
 }
 
-<<<<<<< HEAD
-=======
 export interface LightboxSections {
 
 	/**
@@ -5874,7 +5428,6 @@ export interface CustomObject {
 	[propertyName: string]: any
 }
 
->>>>>>> upstream/master
 export interface DateHelpers {
 
 	/**
@@ -6030,22 +5583,13 @@ export interface Calendar {
 		config: {
 			day?: string | number,
 			date?: Date,
-<<<<<<< HEAD
-			hours?: Array<string | number> | boolean,
-=======
 			hours?: string[] | number[] | boolean,
->>>>>>> upstream/master
 			customWeeks?: {
 				[timespan: string]: {
 					from: Date,
 					to: Date,
-<<<<<<< HEAD
-					hours?: Array<string | number>,
-					days?: Array<string | number | Array<string | number>> | boolean,
-=======
 					hours?: string[] | number[],
 					days?: WorkDaysTuple | boolean,
->>>>>>> upstream/master
 				},
 			},
 		}
@@ -6062,11 +5606,7 @@ export interface Calendar {
 		config: {
 			day?: string | number,
 			date?: Date,
-<<<<<<< HEAD
-			hours?: Array<string | number> | boolean,
-=======
 			hours?: string[] | number[] | boolean,
->>>>>>> upstream/master
 		}
 	): void,
 
@@ -6184,8 +5724,6 @@ export interface DomHelpers {
 	[customMethod: string]: any;
 }
 
-<<<<<<< HEAD
-=======
 export interface DatastoreConfig {
 
 	/**
@@ -6210,7 +5748,6 @@ export interface DatastoreConfig {
 	initItem?(item: any): any
 }
 
->>>>>>> upstream/master
 export interface DatastoreMethods {
 
 	/**
@@ -6380,11 +5917,7 @@ export interface DatastoreMethods {
 	 * @param the handler function
 	 * @param optional, an object with settings for the event handler
 	*/
-<<<<<<< HEAD
-	attachEvent<T extends keyof TreeDatastoreEvents>(event: T, handler: TreeDatastoreEvents[T], settings?: object): boolean,
-=======
 	attachEvent<T extends keyof TreeDatastoreEvents>(event: T, handler: TreeDatastoreEvents[T], settings?: object): string,
->>>>>>> upstream/master
 
 	/**
 	 * calls an inner event
@@ -6655,8 +6188,6 @@ export interface TreeDatastoreEvents extends DatastoreEvents {
 	"onItemClose": (id: string | number) => any
 }
 
-<<<<<<< HEAD
-=======
 export interface InlineEditor {
 
 	/**
@@ -6753,7 +6284,6 @@ export interface InlineEditor {
 	[customMethod: string]: any;
 }
 
->>>>>>> upstream/master
 export interface InlineEditorMethods {
 
 	/**
@@ -6873,10 +6403,6 @@ export interface InlineEditorMethods {
 	 * sets a mapping object
 	 * @param an object with the mapping configuration:
 	 * @param the method to initialize mapping
-<<<<<<< HEAD
-	 * @param the method that will be called when the inline editor is opened
-	 * @param the method that will be called when the inline editor is closed
-=======
 	 * @param the inlineEditors object
 	 * @param the Grid layout view
 	 * @param the method that will be called when the inline editor is opened
@@ -6887,17 +6413,10 @@ export interface InlineEditorMethods {
 	 * @param the inlineEditors object
 	 * @param the HTML element
 	 * @param the Grid layout view
->>>>>>> upstream/master
 	 * @param the method to destroy mapping
 	*/
 	setMapping(
 		mapping: {
-<<<<<<< HEAD
-			init: Function,
-			onShow: Function,
-			onHide: Function,
-			destroy: Function,
-=======
 			init: ((
 				inlineEditors: InlineEditorMethods,
 				grid: any,
@@ -6913,7 +6432,6 @@ export interface InlineEditorMethods {
 				grid: any,
 			) => void),
 			destroy: (() => void),
->>>>>>> upstream/master
 		}
 	): void,
 
@@ -7057,11 +6575,7 @@ export interface QuickInfo {
 			header?: {
 				title?: string,
 				date?: string,
-<<<<<<< HEAD
-			}
-=======
 			},
->>>>>>> upstream/master
 			content?: string,
 			buttons?: string[],
 		}
@@ -7085,18 +6599,11 @@ export interface Undo {
 	/**
 	 * returns the stack of stored undo user actions
 	*/
-<<<<<<< HEAD
-	getUndoStack(): Array<object>,
-=======
 	getUndoStack(): UndoRedoAction[],
->>>>>>> upstream/master
 
 	/**
 	 * returns the stack of stored redo user actions
 	*/
-<<<<<<< HEAD
-	getRedoStack(): Array<object>,
-=======
 	getRedoStack(): UndoRedoAction[],
 
 	/**
@@ -7110,7 +6617,6 @@ export interface Undo {
 	 * @param the redo stack
 	*/
 	setRedoStack(stack: UndoRedoAction[]): void,
->>>>>>> upstream/master
 
 	/**
 	 * clears the stack of stored undo commands
@@ -7260,11 +6766,6 @@ export interface Overlay {
 	/**
 	 * adds a new overlay into the Gantt Chart and returns its id
 	 * @param the render function. Takes a container with custom content as a parameter
-<<<<<<< HEAD
-	 * @param optional, the ID of the overlay
-	*/
-	addOverlay(render: Function, id?: number | string): string | number,
-=======
 	 * @param the overlay container
 	 * @param optional, the ID of the overlay
 	*/
@@ -7274,7 +6775,6 @@ export interface Overlay {
 		) => HTMLElement),
 		id?: number | string
 	): string | number,
->>>>>>> upstream/master
 
 	/**
 	 * removes an overlay by its id
@@ -7314,23 +6814,6 @@ export interface Overlay {
 	[customMethod: string]: any;
 }
 
-<<<<<<< HEAD
-export interface ZoomLevels {
-
-	/**
-	 * required, an array of zooming levels, each of which includes the following properties:
-	 * @param the name of the level
-	 * @param the height of the scale
-	 * @param the height of the scale
-	 * @param the minimal width of a column. It has a higher priority than minColumnWidth and maxColumnWidth
-	 * @param an array of scales to switch between while zooming in/out on this level
-	*/
-	name: string,
-	scale_height?: number,
-	height?: number,
-	min_column_width?: number,
-	scales: Scale[],
-=======
 export interface ZoomLevel {
 
 	/**
@@ -7357,24 +6840,16 @@ export interface ZoomLevel {
 	 * an array of scales to switch between while zooming in/out on this level
 	*/
 	scales: Scales
->>>>>>> upstream/master
 }
 
 export interface ZoomMethods {
 
 	/**
-<<<<<<< HEAD
-	 * initialize the extension with the provided configuration.
-	 * @param an object with configuration settings that contains the *levels* array of zooming levels and a number of additional properties:
-	 * @param required, an array of zooming levels, each of which includes the following properties:
-	 * @param allows specifying a custom handler of the mouse wheel to work with zooming manually
-=======
 	 * initializes the extension with the provided configuration.
 	 * @param an object with configuration settings that contains the *levels* array of zooming levels and a number of additional properties:
 	 * @param required, an array of zooming levels
 	 * @param allows specifying a custom handler of the mouse wheel to work with zooming manually
 	 * @param a native event object.
->>>>>>> upstream/master
 	 * @param the start value of the time scale zooming
 	 * @param the end value of the time scale zooming
 	 * @param the number of the default active level
@@ -7387,15 +6862,10 @@ export interface ZoomMethods {
 	*/
 	init(
 		zoomConfig: {
-<<<<<<< HEAD
-			levels: ZoomLevels[],
-			handler?: Function,
-=======
 			levels: ZoomLevel[],
 			handler?: ((
 				e: Event,
 			) => void),
->>>>>>> upstream/master
 			startDate?: Date,
 			endDate?: Date,
 			activeLevelIndex?: number,
@@ -7404,11 +6874,7 @@ export interface ZoomMethods {
 			maxColumnWidth?: number,
 			useKey?: string,
 			trigger?: string | null | undefined,
-<<<<<<< HEAD
-			element?: HTMLElement | Function,
-=======
 			element?: HTMLElement | (() => HTMLElement),
->>>>>>> upstream/master
 		}
 	): void,
 
@@ -7424,14 +6890,11 @@ export interface ZoomMethods {
 	setLevel(level: number | string): void,
 
 	/**
-<<<<<<< HEAD
-=======
 	 * allows getting all zooming levels
 	*/
 	getLevels(): ZoomLevel[],
 
 	/**
->>>>>>> upstream/master
 	 * increases the current zooming level
 	*/
 	zoomIn(): void,
@@ -7452,11 +6915,6 @@ export interface ZoomMethods {
 	 * detaches a handler from an event
 	 * @param the id of the attached event handler
 	*/
-<<<<<<< HEAD
-	detachEvent(id: string): void
-
-	[customMethod: string]: any;
-=======
 	detachEvent(id: string): void,
 
 	/**
@@ -7471,25 +6929,16 @@ export interface ZoomMethods {
 	 * @param the event's name
 	*/
 	checkEvent(name: string): boolean,
->>>>>>> upstream/master
 }
 
 export interface ZoomEvents {
 
 	/**
-<<<<<<< HEAD
-	 * fires during switching of the zooming level
-	 * @param the number of the level
-	 * @param the config of the level
-	*/
-	"onAfterZoom": (level: number | string, config: ZoomLevels) => any
-=======
 	 * fires during switching of the zooming level.
 	 * @param the number of the level
 	 * @param the config of the level
 	*/
 	"onAfterZoom": (level: number | string, config: ZoomLevel) => any
->>>>>>> upstream/master
 }
 
 export interface Tooltip {
@@ -7497,34 +6946,19 @@ export interface Tooltip {
 	/**
 	 * returns the HTML element of the tooltip
 	*/
-<<<<<<< HEAD
-	getNode(): HTMLElement
-=======
 	getNode(): HTMLElement,
 
->>>>>>> upstream/master
 	/**
 	 * locks the position of tooltip to the boundaries of the specified HTML element
 	 * @param the HTML element under the question
 	*/
-<<<<<<< HEAD
-	setViewport(node: HTMLElement): object
-=======
 	setViewport(node: HTMLElement): object,
 
->>>>>>> upstream/master
 	/**
 	 * displays the tooltip at specific coordinates (relative to document.body). The method can take different parameters, depending on the position you want to show the tooltip at. To display tooltip at specific coordinates (relative to document.body), pass x,y coordinates. To display tooltip at the mouse event coordinates pass the Event object. The *tooltip_offset_x/y* and viewport will be taken into account.
 	 * @param the X coordinate or the mouse event object
 	 * @param the Y coordinate
 	*/
-<<<<<<< HEAD
-	show(config?: number | Event, top?: number): object
-	/**
-	 * hides the tooltip element
-	*/
-	hide(): object
-=======
 	show(config?: number | Event, top?: number): object,
 
 	/**
@@ -7532,16 +6966,11 @@ export interface Tooltip {
 	*/
 	hide(): object,
 
->>>>>>> upstream/master
 	/**
 	 * puts HTML content into the tooltip. Takes as a parameter:
 	 * @param a string with HTML content for the tooltip
 	*/
-<<<<<<< HEAD
-	setContent(html: string): object
-=======
 	setContent(html: string): object,
->>>>>>> upstream/master
 }
 
 export interface Tooltips {
@@ -7558,21 +6987,13 @@ export interface Tooltips {
 	 * @param a handler called when the mouse pointer enters the element. The parameters are:
 	 * @param a native mouse event
 	 * @param the HTML node
-<<<<<<< HEAD
-	 * @param a handler called when the mouse pointer moves inside the element. The parameters are:
-=======
 	 * @param optional, a handler called when the mouse pointer moves inside the element. The parameters are:
->>>>>>> upstream/master
 	 * @param a native mouse event
 	 * @param the HTML node
 	 * @param a handler called when the mouse pointer leaves the element. The parameters are:
 	 * @param a native mouse event
 	 * @param the HTML node
-<<<<<<< HEAD
-	 * @param defines whether the module listens to mouse events on the whole page (*true*) or only inside a gantt element (*false*). By default the option is set to *false*.
-=======
 	 * @param optional, defines whether the module listens to mouse events on the whole page (*true*) or only inside a gantt element (*false*). By default the option is set to *false*.
->>>>>>> upstream/master
 	*/
 	attach(
 		config: {
@@ -7580,17 +7001,6 @@ export interface Tooltips {
 			onmouseenter: ((
 				event: MouseEvent,
 				node: HTMLElement,
-<<<<<<< HEAD
-			) => any),
-			onmousemove?: ((
-				event: MouseEvent,
-				node: HTMLElement,
-			) => any),
-			onmouseleave: ((
-				event: MouseEvent,
-				node: HTMLElement,
-			) => any),
-=======
 			) => void),
 			onmousemove?: ((
 				event: MouseEvent,
@@ -7600,7 +7010,6 @@ export interface Tooltips {
 				event: MouseEvent,
 				node: HTMLElement,
 			) => void),
->>>>>>> upstream/master
 			global?: boolean,
 		}
 	): void,
@@ -7620,11 +7029,7 @@ export interface Tooltips {
 			html: ((
 				event: Event,
 				node: HTMLElement,
-<<<<<<< HEAD
-			) => any),
-=======
 			) => HTMLElement | string | number | void),
->>>>>>> upstream/master
 			global?: boolean,
 		}
 	): void,
@@ -7633,11 +7038,7 @@ export interface Tooltips {
 	 * removes tooltip. As a parameter the method takes:
 	 * @param the CSS selector of a Gantt element
 	*/
-<<<<<<< HEAD
-	detach(selector: string): void
-=======
 	detach(selector: string): void,
->>>>>>> upstream/master
 }
 
 export interface DurationFormatter {
@@ -7646,32 +7047,20 @@ export interface DurationFormatter {
 	 * returns *true* if the provided string can be parsed into the duration value, otherwise
 	 * @param the string that will be checked
 	*/
-<<<<<<< HEAD
-	canParse(value: string): boolean
-=======
 	canParse(value: string): boolean,
 
->>>>>>> upstream/master
 	/**
 	 * converts the provided duration value into the duration string
 	 * @param the duration value that will be converted
 	*/
-<<<<<<< HEAD
-	format(value: number): string
-=======
 	format(value: number): string,
 
->>>>>>> upstream/master
 	/**
 	 * parses the provided string into the duration value. If the value can’t be parsed, ‘null’ will be returned
 	 * @param the string that will be converted
 	*/
-<<<<<<< HEAD
-	parse(value: string): number
-=======
 	parse(value: string): number,
 
->>>>>>> upstream/master
 }
 
 export interface LinkFormatter {
@@ -7680,32 +7069,20 @@ export interface LinkFormatter {
 	 * returns *true* if the provided string can be parsed into the link object, otherwise
 	 * @param the string that will be checked
 	*/
-<<<<<<< HEAD
-	canParse(value: string): boolean
-=======
 	canParse(value: string): boolean,
 
->>>>>>> upstream/master
 	/**
 	 * converts the provided link value into the string
 	 * @param the link object that will be converted
 	*/
-<<<<<<< HEAD
-	format(value: Link): string
-=======
 	format(value: Link): string,
 
->>>>>>> upstream/master
 	/**
 	 * parses the provided string into the link object. If the value can’t be parsed, ‘null’ will be returned. **Note** that the *link.target* of the given link will have "null" value
 	 * @param the string that will be converted
 	*/
-<<<<<<< HEAD
-	parse(value: string): object
-=======
 	parse(value: string): object,
 
->>>>>>> upstream/master
 }
 
 export interface Formatters {
@@ -7814,37 +7191,18 @@ export interface Formatters {
 				start_to_finish?: string,
 			},
 		}
-<<<<<<< HEAD
-	): LinkFormatter
-=======
 	): LinkFormatter,
->>>>>>> upstream/master
 }
 
 export interface EmptyState {
 
 	/**
-<<<<<<< HEAD
-	 * an array with the IDs of the attached handlers. Modified by the *attachAddTaskEvent* and *detachAddTaskEvents* methods.
-=======
 	 * an array with the IDs of the attached handlers. It is modified by the *attachAddTaskEvent* and *detachAddTaskEvents* methods.
->>>>>>> upstream/master
 	*/
 	clickEvents?: Array<string>,
 
 	/**
 	 * returns *true* if there is no data loaded into the Gantt chart, otherwise
-<<<<<<< HEAD
-	 * @param the container element
-	*/
-	isGanttEmpty(container: HTMLElement): boolean,
-
-	/**
-	 * returns *true* if the api/gantt_show_empty_state_config.md property is enabled, otherwise
-	 * @param the container element
-	*/
-	isEnabled(container: HTMLElement): boolean,
-=======
 	*/
 	isGanttEmpty(): boolean,
 
@@ -7852,7 +7210,6 @@ export interface EmptyState {
 	 * returns *true* if the api/gantt_show_empty_state_config.md property is enabled, otherwise
 	*/
 	isEnabled(): boolean,
->>>>>>> upstream/master
 
 	/**
 	 * puts an HTML content into the empty state element. The method can be redefined.
@@ -7866,20 +7223,12 @@ export interface EmptyState {
 	getContainer(): HTMLElement | null,
 
 	/**
-<<<<<<< HEAD
-	 * returns the DOM node of the empty state element.
-=======
 	 * returns the DOM node of the empty state element
->>>>>>> upstream/master
 	*/
 	getNode(): HTMLElement | null,
 
 	/**
-<<<<<<< HEAD
-	 * displays the "empty state". Returns *false* if there is no container for the Empty State Element.  The extension calls the method by itself
-=======
 	 * displays the "empty state". Returns *null* if there is no container for the Empty State Element.  The extension calls the method by itself
->>>>>>> upstream/master
 	*/
 	show(): null | void,
 
@@ -7889,20 +7238,12 @@ export interface EmptyState {
 	hide(): boolean | void,
 
 	/**
-<<<<<<< HEAD
-	 * adds the handler that will fire after clicking on the Empty State Element. By default, used to add a new task.
-=======
 	 * adds the handler that will fire after clicking on the Empty State Element. By default, it is used to add a new task.
->>>>>>> upstream/master
 	*/
 	attachAddTaskEvent(): void,
 
 	/**
-<<<<<<< HEAD
-	 * removes the handlers that were used to add a task after clicking on the Empty State Element.
-=======
 	 * removes the handlers that were used to add a task after clicking on the Empty State Element
->>>>>>> upstream/master
 	*/
 	detachAddTaskEvents(): void
 }

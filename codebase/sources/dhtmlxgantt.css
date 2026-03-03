@@ -1,17 +1,3 @@
-<<<<<<< HEAD
-/*
-@license
-
-dhtmlxGantt v.8.0.7 Professional
-
-This software is covered by DHTMLX Enterprise License. Usage without proper license is prohibited.
-
-(c) XB Software
-
-*/
-.buttonBg {
-  background: #fff;
-=======
 @charset "UTF-8";
 @font-face {
   font-family: 'Inter';
@@ -19,7 +5,6 @@ This software is covered by DHTMLX Enterprise License. Usage without proper lice
   font-weight: 300;
   font-display: swap;
   src: url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf) format('truetype');
->>>>>>> upstream/master
 }
 @font-face {
   font-family: 'Inter';
@@ -1118,11 +1103,7 @@ url("src/dhx-gantt-icons.woff2?d2ea3e087edb3b9fad35a6580bd8acd3") format("woff2"
   width: 100%;
 }
 .gantt_task_grid_row_resize_wrap .gantt_task_grid_row_resize {
-<<<<<<< HEAD
-  background-color: #ebebeb;
-=======
   background-color: var(--dhx-gantt-base-colors-border-light);
->>>>>>> upstream/master
   top: 6px;
   height: 1px;
   width: 100%;
@@ -1153,22 +1134,6 @@ url("src/dhx-gantt-icons.woff2?d2ea3e087edb3b9fad35a6580bd8acd3") format("woff2"
   flex-shrink: 0;
   flex-grow: 0;
 }
-.gantt_drag_marker.gantt_grid_resize_area {
-  border-left: 1px solid #CECECE;
-  border-right: 1px solid #CECECE;
-}
-.gantt_drag_marker.gantt_row_grid_resize_area {
-  border-top: 1px solid #CECECE;
-  border-bottom: 1px solid #CECECE;
-  pointer-events: none;
-}
-.gantt_row {
-  display: flex;
-}
-.gantt_row > div {
-  flex-shrink: 0;
-  flex-grow: 0;
-}
 .gantt_cell {
   vertical-align: top;
   border-right: var(--dhx-gantt-grid-cell-border);
@@ -1181,10 +1146,6 @@ url("src/dhx-gantt-icons.woff2?d2ea3e087edb3b9fad35a6580bd8acd3") format("woff2"
 .gantt_cell_tree {
   display: flex;
   gap: 4px;
-  flex-wrap: nowrap;
-}
-.gantt_cell_tree {
-  display: flex;
   flex-wrap: nowrap;
 }
 .gantt_grid_scale .gantt_last_cell,
@@ -1265,17 +1226,9 @@ url("src/dhx-gantt-icons.woff2?d2ea3e087edb3b9fad35a6580bd8acd3") format("woff2"
   height: 100%;
   white-space: nowrap;
   min-width: 0;
-<<<<<<< HEAD
-}
-.gantt_tree_icon.gantt_open {
-  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAArklEQVQ4T2NkoBJgpJI5DEPAoFOnTv0/c+YMQR+bmJgwmJmZwX2E4bVp06b9j4yMZODg4MBp2I8fPxiWL1/OkJWVNUAGcXJyMnz//h3uQrJdRLFBIAPQAchlJLsIFuCMjIwM////B5sJMoRkg2CuIdtrQcHBDOxsbHBfCQgIMHz48AHO//nrF8O6tWsJR7+7uzsDIxMTznT0/98/hp07d+I3iGopm2DewKFg8OV+AJWkfRMrTobLAAAAAElFTkSuQmCC);
-  width: 18px;
-  cursor: pointer;
-=======
   overflow: hidden;
   width: auto;
   text-overflow: ellipsis;
->>>>>>> upstream/master
 }
 .gantt_tree_icon.gantt_open,
 .gantt_tree_icon.gantt_close {
@@ -1390,20 +1343,12 @@ url("src/dhx-gantt-icons.woff2?d2ea3e087edb3b9fad35a6580bd8acd3") format("woff2"
   opacity: 1;
 }
 .gantt_column_drag_marker {
-<<<<<<< HEAD
-  border: 1px solid #CECECE;
-=======
   border: var(--dhx-gantt-grid-scale-border-vertical);
->>>>>>> upstream/master
   opacity: 0.8;
   pointer-events: none;
 }
 .gantt_grid_head_cell_dragged {
-<<<<<<< HEAD
-  border: 1px solid #CECECE;
-=======
   border: var(--dhx-gantt-grid-scale-border-vertical);
->>>>>>> upstream/master
   opacity: 0.3;
 }
 .gantt_grid_target_marker {
@@ -1411,11 +1356,7 @@ url("src/dhx-gantt-icons.woff2?d2ea3e087edb3b9fad35a6580bd8acd3") format("woff2"
   top: 0;
   width: 2px;
   height: 100%;
-<<<<<<< HEAD
-  background-color: #FFA011;
-=======
   background-color: var(--dhx-gantt-base-colors-primary);
->>>>>>> upstream/master
   transform: translateX(-1px);
 }
 .gantt_grid_target_marker::before,
@@ -1426,16 +1367,6 @@ url("src/dhx-gantt-icons.woff2?d2ea3e087edb3b9fad35a6580bd8acd3") format("woff2"
   left: -5px;
   width: 0px;
   height: 0px;
-<<<<<<< HEAD
-  border: 6px solid rgba(0, 0, 0, 0);
-}
-.gantt_grid_target_marker::before {
-  border-top-color: #FFA011;
-}
-.gantt_grid_target_marker::after {
-  bottom: 0;
-  border-bottom-color: #FFA011;
-=======
   border: 6px solid transparent;
 }
 .gantt_grid_target_marker::before {
@@ -1444,7 +1375,6 @@ url("src/dhx-gantt-icons.woff2?d2ea3e087edb3b9fad35a6580bd8acd3") format("woff2"
 .gantt_grid_target_marker::after {
   bottom: 0;
   border-bottom-color: var(--dhx-gantt-base-colors-primary);
->>>>>>> upstream/master
 }
 .gantt_message_area {
   position: fixed;
@@ -1748,21 +1678,8 @@ div.dhx_modal_cover {
 }
 .link_start_deny .gantt_link_control.task_start_date div,
 .link_finish_deny .gantt_link_control.task_end_date div {
-<<<<<<< HEAD
-  background-color: #e87e7b;
-  border-color: #dd3e3a;
-}
-.gantt_link_arrow_right {
-  border-width: 4px 0 4px 6px;
-  border-top-color: transparent !important;
-  border-right-color: transparent !important;
-  border-bottom-color: transparent !important;
-  border-left-color: #FFA011;
-  /*margin-top: -1px;*/
-=======
   --dhx-gantt-link-handle-border: var(--dhx-gantt-link-handle-border-hover);
   --dhx-gantt-link-handle-background: var(--dhx-gantt-base-colors-error);
->>>>>>> upstream/master
 }
 /* Link arrows */
 .gantt_link_arrow_left {
@@ -2068,11 +1985,7 @@ div.dhx_modal_cover {
   width: 100%;
   height: 100%;
   position: fixed;
-<<<<<<< HEAD
-  z-index: 10000;
-=======
   z-index: 16;
->>>>>>> upstream/master
   top: 0px;
   left: 0px;
   background-color: rgba(0, 0, 0, 0.3);
@@ -2178,9 +2091,6 @@ div.dhx_modal_cover {
   border-left-width: 0;
   border-right-width: 0;
   border-radius: 0;
-}
-.gantt_duration .gantt_duration_value.gantt_duration_value_formatted {
-  width: 70px;
 }
 .gantt_duration .gantt_duration_value.gantt_duration_value_formatted {
   width: 70px;
@@ -2735,9 +2645,6 @@ div.dhx_modal_cover {
 .gantt_cal_quick_info.gantt_qi_hidden {
   display: none;
 }
-.gantt_cal_quick_info.gantt_qi_hidden {
-  display: none;
-}
 .gantt_tooltip {
   padding: 8px 30px 8px 8px;
   position: absolute;
@@ -2893,20 +2800,13 @@ div.dhx_modal_cover {
   position: absolute;
   left: 0;
   top: 0;
-<<<<<<< HEAD
-  outline: 1px solid #3f98db;
-  background-color: rgba(52, 152, 219, 0.3);
-=======
   outline: 1px solid var(--dhx-gantt-base-colors-primary);
   background-color: var(--dhx-gantt-base-colors-primary-lighter);
->>>>>>> upstream/master
 }
 .gantt_timeline_move_available,
 .gantt_timeline_move_available * {
   cursor: move;
 }
-<<<<<<< HEAD
-=======
 .gantt_constraint_marker {
   position: absolute;
   pointer-events: none;
@@ -2932,7 +2832,6 @@ div.dhx_modal_cover {
 .gantt_rtl .gantt_constraint_marker.gantt_constraint_marker_mso {
   transform: rotate(180deg);
 }
->>>>>>> upstream/master
 .gantt_rtl .gantt_grid {
   text-align: right;
 }
@@ -3150,18 +3049,11 @@ div.dhx_modal_cover {
   position: absolute;
   top: -1000px;
   left: -1000px;
-<<<<<<< HEAD
-  font-family: "Arial";
-  font-size: 13px;
-  z-index: 1;
-  white-space: nowrap;
-=======
   font-family: var(--dhx-gantt-font-family);
   font-size: var(--dhx-gantt-font-size);
   z-index: 1;
   white-space: nowrap;
   background: var(--dhx-gantt-base-colors-select);
->>>>>>> upstream/master
 }
 .gantt_drag_marker .gantt_tree_indent,
 .gantt_drag_marker .gantt_tree_icon.gantt_blank,
@@ -3203,21 +3095,12 @@ div.dhx_modal_cover {
   text-align: center;
 }
 .gantt_empty_state_text_link {
-<<<<<<< HEAD
-  color: #03A9F4;
-  background-position: top right;
-=======
   color: var(--dhx-gantt-base-colors-primary);
->>>>>>> upstream/master
   background: none;
   opacity: 1;
   height: unset;
   cursor: pointer;
 }
-<<<<<<< HEAD
-.gantt_drag_marker,
-=======
->>>>>>> upstream/master
 .gantt_drag_marker .gantt_row.odd {
   background-color: var(--dhx-gantt-base-colors-select);
 }
