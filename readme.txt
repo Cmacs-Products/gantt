@@ -1,14 +1,29 @@
 DHTMLX Gantt
 ============
 
-Version 8.0.7, Professional Edition
+Version 9.1.2, Professional Edition
 
 
 License
 ------------
 
-Enterprise License, check license.txt for more details
+Individual License, check license.txt for more details
 
+How to install using npm/yarn
+------------
+
+Professional Evaluation version:
+
+- npm config set @dhx:registry=https://npm.dhtmlx.com
+- npm install @dhx/trial-gantt
+
+Professional version:
+
+Generate your login and password for private npm in your Client's Area: https://dhtmlx.com/clients/
+
+- npm config set @dhx:registry=https://npm.dhtmlx.com
+- npm login --registry=https://npm.dhtmlx.com --scope=@dhx --auth-type=legacy
+- npm install @dhx/gantt
 
 How to start
 ------------
@@ -31,6 +46,28 @@ Running the backend:
 or
 
 - copy `codebase` and `samples` folders of the package to your Apache/nginx directory and open samples as static html pages. Demos that require RESTful backend will not work in that case.
+
+React Version
+------------
+
+The React version of the library is available as a separate package. It is a wrapper around the core library and provides React components for Gantt.
+
+It is available under the Commercial, Enterprice, Ultimate and Evaluation licenses.
+
+You can find the samples project for the React Gantt in `react-samples` folder of the package.
+
+How to install the React Version using npm/yarn
+-------------
+
+Professional Evaluation version:
+
+- npm config set @dhx:registry=https://npm.dhtmlx.com
+- npm install @dhx/trial-react-gantt
+
+Professional version:
+
+Generate your login and password for private npm in your Client's Area: https://dhtmlx.com/clients/
+
 
 Package structure
 ------------

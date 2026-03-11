@@ -17,7 +17,7 @@
     "url": "https://github.com/DHTMLX/gantt"
   },
   "author": "XB Software Ltd.",
-  "license": "GPL-2.0",
+  "license": "SEE LICENSE IN license.txt",
   "homepage": "https://dhtmlx.com",
   "dependencies": {
     "less": "^3.0.4",
