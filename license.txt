@@ -34,10 +34,6 @@ IN NO EVENT WILL XB Software Ltd. BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA
 
 IF THIS LIMITATION IS NOT ALLOWED BY YOUR RESPECTIVE LAW, THEN CONTACT XB Software Ltd. TO CHECK IF THE LIMITATION CAN BE WAIVED IN YOUR CASE. THE WAIVER CAN ONLY BE GIVEN BY WRITTEN CONSENT.
 
-e) Incorporated Terms
-
-The Parties agree that solely the terms, restrictions, usage limitations, support conditions, and other provisions related to the specific DHTMLX license type purchased by the Licensee, as set forth in the licensing table available at https://dhtmlx.com/docs/products/licenses.shtml, are hereby incorporated into and form an integral part of these License Terms.
-
 2. COPYRIGHT
 
 XB Software Ltd. and its licensors retain all ownership rights to the Software and related documentation. Use of the Software and related documentation is governed by the license agreement accompanying the Software and applicable copyright law.
@@ -48,4 +44,5 @@ THIS DOCUMENTATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. IN NO EVENT
 
 The Software and its documentation come with no warranty, without any limitation. XB Software Ltd. accepts no liability of any kind arising from any use of the Software or its documentation. If your law doesn't allow this, then do not use this software and documentation.
 
- 
+
+
